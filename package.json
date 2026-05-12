@@ -1,0 +1,7 @@
+{
+  "name": "clonecimed",
+  "private": true,
+  "scripts": {
+    "vercel-build": "node scripts/vercel-inject-env.mjs"
+  }
+}
