@@ -1,12 +1,11 @@
 /**
- * Frases de abordagem distintas por cliente (hash + segmento).
- * Nome fixo: Alessandro Silva Cardoso — sites e softwares (@alessandrosilvaxz_ no Instagram).
- * O segundo argumento (rowIndex) é opcional: se omitido, usa hash do nome para a frase ser
- * estável na tabela e igual à que fica guardada após «Guardar».
+ * Frases de abordagem (variação por hash + segmento só para escolher tom / link estética).
+ * Não mencionamos o negócio específico do destinatário: foco em impulsionar com site/software
+ * sob medida e no diferencial de entregar do jeito que o cliente quer.
  */
 const VENDEDOR = "Alessandro Silva Cardoso";
 const VENDEDOR_INSTAGRAM = "@alessandrosilvaxz_";
-/** Site de referência (estética automotiva) — incluído nas mensagens desse segmento. */
+/** Site de referência (estética automotiva) — só no bloco desse segmento. */
 const SITE_PORTFOLIO_ESTETICA_AUTO = "https://estetica-auto-xi.vercel.app/";
 
 function hashStr(s) {
@@ -70,98 +69,62 @@ function pick(arr, seed) {
 }
 
 /**
- * @param {string} empresa
- * @param {number} [rowIndex] — salt para variar; omitir = estável por nome (recomendado na UI).
+ * @param {string} empresa — só serve para variar a frase e para o segmento (ex. link estética); não entra no texto.
+ * @param {number} [rowIndex] — salt opcional; omitir = estável por nome (igual ao «Guardar»).
  */
 function gerarFraseAbordagem(empresa, rowIndex) {
-  const nome = String(empresa || "a empresa").trim();
-  const seg = segmento(nome);
+  const chave = String(empresa || "").trim();
+  const seg = segmento(chave);
   const idx =
-    typeof rowIndex === "number" && Number.isFinite(rowIndex) ? rowIndex : hashStr(nome.toLowerCase());
-  const h = hashStr(nome) + idx * 17 + seg.length * 31;
-  const intro = `Olá, meu nome é ${VENDEDOR} (${VENDEDOR_INSTAGRAM} no Instagram), desenvolvo sites e softwares.`;
+    typeof rowIndex === "number" && Number.isFinite(rowIndex) ? rowIndex : hashStr(chave.toLowerCase());
+  const h = hashStr(chave) + idx * 17 + seg.length * 31;
+  const intro = `Olá, meu nome é ${VENDEDOR} (${VENDEDOR_INSTAGRAM} no Instagram). Trabalho com sites e software sob medida para quem quer impulsionar o negócio com presença digital forte — sem solução “de prateleira”. O meu diferencial é alinhar tudo com o que vocês realmente precisam: ouço primeiro, desenho fluxos e ecrãs a partir da forma como trabalham, e entrego o site ou o software do jeito que imaginam — com espaço para ajustar até ficar confortável para a equipa.`;
 
-  const doresGeral = [
-    `Gostaria de saber se você não tem interesse numa conversa curta, sem compromisso, sobre como fortalecer a imagem da ${nome} online?`,
-    `Vi a ${nome} no Google Maps e imaginei que atrair mais contactos qualificados pode ser um desafio hoje — faz sentido falarmos uns minutos?`,
-    `Muitos negócios como o da ${nome} perdem tempo a responder o mesmo tipo de pedido; um site ou um pequeno sistema costuma organizar isso. Teria interesse em ouvir uma ideia sem compromisso?`,
-    `Se a ${nome} depende só do balcão ou do Instagram para vender, um canal próprio (site + WhatsApp bem integrados) costuma dar mais previsibilidade. Gostaria de saber se não tem interesse numa conversa rápida?`,
-    `A presença digital da ${nome} pode estar a deixar passar clientes que procuram à noite ou ao fim-de-semana. Posso sugerir algo enxuto e ajustado ao vosso perfil — topa um bate-papo?`,
-    `Trabalho com sites e software sob medida; para a ${nome}, o foco seria clareza (o que oferecem, como contactar, prova social). Faz sentido eu enviar uma proposta de escopo?`,
-    `Se hoje a equipa da ${nome} faz follow-up manual ou planilhas “no improviso”, dá para ganhar horas com automações simples. Tem interesse em explorar isso?`,
-    `Clientes do ramo da ${nome} costumam dizer que o gargalo é aparecer bem no Maps e depois converter a visita em mensagem. Posso mostrar exemplos — combinamos uma chamada curta?`,
-    `Para a ${nome}, um site não é “só cartão”: é vitrine 24h, confiança e menos dependência de algoritmos. Gostaria de saber se não tem interesse num diagnóstico gratuito?`,
+  const corposGeral = [
+    `Seria possível uma conversa curta, sem compromisso, só para ver se faz sentido falarmos em site ou software para dar mais fôlego ao negócio de vocês?`,
+    `Estou a falar com equipas que queiram explorar se um site ou uma pequena ferramenta à medida podem trazer mais organização, credibilidade e vendas — topam 10 minutos sem obrigação?`,
+    `Muita gente sente que está a perder tempo com processos manuais ou com ferramentas que não encaixam no dia a dia. Eu ajudo a traduzir o que vocês já fazem num site ou num software que acompanhe o ritmo de vocês — faz sentido ouvir uma ideia?`,
+    `Se fizer sentido para vocês, posso sugerir caminhos simples: vitrine online, integração com WhatsApp, ou um fluxo interno leve — sempre desenhado em conjunto, para não impor um modelo que não cola com o negócio.`,
+    `Não procuro “empurrar pacote”: o foco é perceber a prioridade de vocês e propor algo enxuto que realmente ajude a crescer ou a descomplicar — site, portal ou automação, conforme o que fizer mais sentido.`,
+    `O que mais valorizo no projeto é a parceria na definição: vocês dizem o que é inegociável no fluxo, eu proponho a melhor forma técnica de chegar lá — e vamos refinando até bater certo com a operação.`,
+    `Se estiverem abertos, posso mostrar como costumo trabalhar: protótipo cedo, feedback frequente, e entregas em etapas para não parar o negócio de vocês. Querem ver se encaixa numa chamada rápida?`,
+    `Às vezes um site bem claro ou um software enxuto faz mais diferença do que várias ferramentas soltas. Posso ajudar a priorizar o que traria retorno mais rápido para vocês — sem falar do vosso ramo em concreto, só da lógica de crescer com digital sob medida.`,
+    `Meu trabalho é dar autonomia depois da entrega: documentação clara, código organizado e flexibilidade para evoluir quando o negócio mudar — porque software e site têm de acompanhar vocês, não o contrário.`,
+    `Se a ideia de “ter um sistema que finalmente obedece ao processo de vocês” faz sentido, posso esboçar uma linha de solução numa conversa curta — sem custo nem compromisso para ouvir.`,
+    `Gosto de construir com transparência em prazos e escopo: vocês sabem o que vão receber em cada fase, e onde podem pedir ajustes. Isso costuma reduzir surpresa e acelerar adoção pela equipa.`,
+    `Posso combinar uma chamada de voz ou vídeo só para alinhar expectativas: o que vocês querem ver no ar, que tarefas querem deixar de fazer à mão, e que resultado medem como sucesso — a partir daí digo se consigo ajudar e como.`,
+    `Não dependo de templates engessados: partimos do zero funcional para o caso de vocês — identidade, textos, integrações e regras de negócio — para o resultado parecer “feito para nós”, não “mais um site igual”.`,
+    `Se quiserem dar o próximo passo no digital com algo que reflita a forma única como vocês atendem ou produzem, estou disponível para uma primeira conversa e, se fizer sentido, um orçamento claro em seguida.`,
+    `Resumo do que ofereço: escuta a sério, proposta alinhada à realidade de vocês, e entrega de site ou software com margem para afinar até ficar natural no dia a dia. Posso enviar disponibilidade para falarmos?`,
   ];
 
-  const doresEsteticaAuto = [
-    `A ${nome} vende confiança e resultado visual: um site com antes/depois, pacotes (polimento, vitrificação, PPF) e botão direto para WhatsApp costuma encher agenda. Posso sugerir um esboço inspirado no que já fiz em ${SITE_PORTFOLIO_ESTETICA_AUTO}?`,
-    `Quem procura estética automotiva compara no telefone de madrugada; se a ${nome} aparecer com fotos nítidas, horário e local no Maps bem amarrados, reduz dúvida. Vale uma conversa curta? O tipo de página que monto está exemplificado em ${SITE_PORTFOLIO_ESTETICA_AUTO}.`,
-    `Para a ${nome}, repetir preço e serviço só no Instagram cansa; um site próprio (portfólio + depoimentos + agendar) dá credibilidade. Quer ver referência? ${SITE_PORTFOLIO_ESTETICA_AUTO} é um projeto meu nesse ramo — combinamos 10 minutos?`,
-    `Se a ${nome} quer mais orçamentos qualificados, um fluxo simples (serviços → galeria → WhatsApp) costuma funcionar melhor que só DM. Tenho caso parecido em ${SITE_PORTFOLIO_ESTETICA_AUTO}; faz sentido falarmos sem compromisso?`,
-    `A impressão da ${nome} no digital precisa ser tão caprichada quanto o carro na saída do box; posso ajudar a traduzir isso num site rápido e bonito no telemóvel. Referência: ${SITE_PORTFOLIO_ESTETICA_AUTO}. Topa ouvir uma ideia?`,
-  ];
-
-  const doresComercio = [
-    `A ${nome} move muita gente no dia a dia; quando o estoque ou as promoções mudam, atualizar tudo em vários canais cansa. Um site central ajuda — quer ver um esboço?`,
-    `No varejo, a ${nome} compete com preço e proximidade; um site bem feito ajuda a contar a história da marca e justificar valor. Faz sentido conversarmos?`,
-    `Se a ${nome} recebe perguntas repetidas no WhatsApp, dá para colocar respostas e catálogo no site e liberar a equipa. Tem interesse em ver como ficaria?`,
-  ];
-
-  const doresIndustria = [
-    `Negócios como a ${nome} muitas vezes precisam de credibilidade técnica na hora de fechar B2B — site e materiais digitais ajudam nisso. Posso sugerir uma linha editorial simples?`,
-    `Se a ${nome} depende de orçamentos por email, um formulário inteligente ou um portal leve costuma reduzir idas e vindas. Gostaria de saber se não tem interesse numa demo rápida?`,
-    `Para a ${nome}, mostrar certificações, prazos e portfólio num só lugar costuma acelerar confiança. Topa uma conversa de 15 minutos?`,
-  ];
-
-  const doresTech = [
-    `A ${nome} já vive de tecnologia; mesmo assim um site atualizado e um fluxo comercial mais “produto” ajudam a fechar projetos maiores. Faz sentido alinharmos?`,
-    `Se a ${nome} quer escalar suporte ou onboarding, às vezes um software enxuto resolve mais que mais uma ferramenta genérica. Tem interesse em explorar o problema comigo?`,
-  ];
-
-  const doresObra = [
-    `No ramo da ${nome}, o cliente compara muito por fotos e referências; um site com obras e áreas de atuação reduz dúvidas. Gostaria de ver um exemplo aplicado a vocês?`,
-    `Orçamentos e prazos costumam ser a dor da ${nome}; um site com FAQs e formulário guiado diminui ligações repetidas. Posso mostrar uma ideia?`,
-  ];
-
-  const doresPosto = [
-    `Para a ${nome}, diferenciar serviços, loja de conveniência e fidelização no digital ajuda a não competir só por preço do litro. Faz sentido falarmos?`,
-  ];
-
-  const doresFarmacia = [
-    `A ${nome} lida com urgência e confiança; um site claro com horários, serviços e contacto reduz stress para o cliente. Tem interesse numa proposta enxuta?`,
-  ];
-
-  const doresFood = [
-    `No setor da ${nome}, cardápio e reservas no telefone geram erro e fila; site + WhatsApp bem amarrados costumam subir avaliações. Gostaria de saber se não tem interesse numa conversa?`,
-  ];
-
-  const doresModa = [
-    `Para a ${nome}, coleções mudam rápido; um site que seja fácil de atualizar (fotos, tamanhos, WhatsApp) ajuda a não perder temporada. Topa ouvir uma sugestão?`,
-  ];
-
-  const doresMaquinas = [
-    `A ${nome} vende solução técnica: um site com fichas, vídeos curtos e pedido de orçamento costuma qualificar melhor o lead. Faz sentido eu montar um rascunho?`,
+  const corposEstetica = [
+    `Quem atua com estética automotiva costuma ganhar muito quando o digital mostra bem o trabalho e destrava orçamentos — posso partilhar um exemplo de site nesse espírito (feito por mim): ${SITE_PORTFOLIO_ESTETICA_AUTO}. Faz sentido ver se encaixa numa conversa curta?`,
+    `Para impulsionar serviços de detalhe/polimento/vitrificação, um canal próprio costuma converter melhor que só redes sociais — tenho referência visual em ${SITE_PORTFOLIO_ESTETICA_AUTO}. Topam ouvir como adapto isso à forma de trabalhar de vocês?`,
+    `O foco continua a ser sob medida: galeria, pacotes, WhatsApp e agendamento do jeito que a equipa quiser — sem copiar o vizinho. Um caso que ilustra o nível de acabamento: ${SITE_PORTFOLIO_ESTETICA_AUTO}. Vale explorar em 10 minutos?`,
+    `Posso ajudar a traduzir a qualidade do serviço de vocês num site rápido no telemóvel, com linguagem clara para o cliente final — inspiração de layout e ritmo em ${SITE_PORTFOLIO_ESTETICA_AUTO}, sempre personalizável à marca de vocês.`,
+    `Se quiserem mais pedidos qualificados, um fluxo simples (mostrar trabalho → explicar processo → falar com vocês) costuma funcionar; vejam o tom em ${SITE_PORTFOLIO_ESTETICA_AUTO} e digam se querem adaptar algo nesse sentido ao negócio de vocês.`,
   ];
 
   const pools = {
-    geral: doresGeral,
-    estetica_auto: doresEsteticaAuto.concat(doresGeral),
-    comercio: doresComercio.concat(doresGeral),
-    industria: doresIndustria.concat(doresGeral),
-    tech: doresTech.concat(doresGeral),
-    obra: doresObra.concat(doresGeral),
-    posto: doresPosto.concat(doresGeral),
-    farmacia: doresFarmacia.concat(doresGeral),
-    food: doresFood.concat(doresGeral),
-    moda: doresModa.concat(doresGeral),
-    maquinas: doresMaquinas.concat(doresGeral),
+    geral: corposGeral,
+    estetica_auto: corposEstetica.concat(corposGeral),
+    comercio: corposGeral,
+    industria: corposGeral,
+    tech: corposGeral,
+    obra: corposGeral,
+    posto: corposGeral,
+    farmacia: corposGeral,
+    food: corposGeral,
+    moda: corposGeral,
+    maquinas: corposGeral,
   };
 
   const pool = pools[seg] || pools.geral;
   const corpo = pick(pool, h);
   let out = intro + " " + corpo;
   if (seg === "estetica_auto" && !out.includes("estetica-auto-xi.vercel.app")) {
-    out += " Referência: " + SITE_PORTFOLIO_ESTETICA_AUTO;
+    out += " Exemplo de trabalho nesse tipo de projeto: " + SITE_PORTFOLIO_ESTETICA_AUTO;
   }
   return out;
 }
