@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Meus clientes · telefones</title>
+  <style>
+    :root {
+      --bg: #f4f0e6;
+      --ink: #0a0a0a;
+      --accent: #ffeb3b;
+      --panel: #fff;
+      --border: 3px solid var(--ink);
+      --shadow: 6px 6px 0 var(--ink);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.5;
+      padding: 1.25rem clamp(1rem, 4vw, 2rem) 2rem;
+      max-width: 960px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-size: clamp(1.5rem, 4vw, 2.2rem);
+      margin-bottom: 0.35rem;
+    }
+    .sub { font-size: 0.9rem; opacity: 0.9; margin-bottom: 1rem; }
+    a { color: var(--ink); font-weight: 600; }
+    .panel {
+      background: var(--panel);
+      border: var(--border);
+      box-shadow: var(--shadow);
+      padding: 1rem 1.15rem;
+      margin-bottom: 1rem;
+    }
+    label { display: block; font-weight: 700; font-size: 0.8rem; margin-bottom: 0.35rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    textarea {
+      width: 100%;
+      min-height: 140px;
+      border: var(--border);
+      padding: 0.65rem;
+      font: inherit;
+      resize: vertical;
+    }
+    .btn-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 0.75rem; }
+    button {
+      border: var(--border);
+      background: var(--accent);
+      color: var(--ink);
+      font-weight: 800;
+      padding: 0.65rem 1rem;
+      cursor: pointer;
+      box-shadow: 4px 4px 0 var(--ink);
+      font-size: 0.95rem;
+    }
+    button.secondary { background: #fff; }
+    button:hover { transform: translate(1px, 1px); box-shadow: 3px 3px 0 var(--ink); }
+    .status { font-size: 0.85rem; font-weight: 600; flex: 1; min-width: 140px; }
+    .meta { font-size: 0.85rem; font-weight: 600; margin: 0.75rem 0 0.35rem; }
+    .wrap {
+      border: var(--border);
+      box-shadow: var(--shadow);
+      background: #fafafa;
+      overflow: auto;
+      max-height: min(70vh, 640px);
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+    th, td { border-bottom: 2px solid var(--ink); padding: 0.55rem 0.65rem; text-align: left; vertical-align: top; }
+    th { background: var(--accent); position: sticky; top: 0; z-index: 1; }
+    td:first-child { font-weight: 700; min-width: 11rem; }
+    td:last-child { white-space: pre-wrap; }
+    .cloud-msg { font-size: 0.82rem; font-weight: 600; margin-top: 0.5rem; min-height: 1.25rem; }
+    .cloud-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 0.5rem; }
+    .cloud-row input[type="email"] { flex: 1; min-width: 12rem; border: var(--border); padding: 0.45rem 0.5rem; font: inherit; }
+  </style>
+  <script src="supabase-config.js"></script>
+</head>
+<body>
+  <p class="sub"><a href="index.html">← Ferramenta completa (Instagram + Maps)</a></p>
+  <h1>Meus clientes</h1>
+  <p class="sub">A lista fica <strong>guardada neste browser</strong> depois de analisares (memória local do site). Com <strong>rodar.bat</strong> também podes carregar <code>clientes.tsv</code> / <code>colagem.txt</code> da pasta. Opcional: <strong>Supabase</strong> para a mesma lista noutro PC.</p>
+
+  <div class="panel" id="sbCloudPanel">
+    <label>Nuvem (Supabase)</label>
+    <p class="sub" style="margin-bottom: 0.35rem">Pedir <strong>link mágico</strong> no email → entrar → <strong>Enviar lista</strong> ou <strong>Traz da nuvem</strong>. Correr o SQL em <code>supabase/schema.sql</code> no teu projeto.</p>
+    <div class="cloud-row">
+      <input type="email" data-sb="email" autocomplete="email" placeholder="teu@email.com" />
+      <button type="button" data-sb="magic">Receber link</button>
+      <button type="button" class="secondary" data-sb="out" hidden>Sair</button>
+      <button type="button" class="secondary" data-sb="push" hidden>Enviar lista</button>
+      <button type="button" class="secondary" data-sb="pull" hidden>Traz da nuvem</button>
+    </div>
+    <p class="cloud-msg" id="cloudSbMsg" aria-live="polite"></p>
+  </div>
+
+  <div class="panel">
+    <label for="paste">Colagem do Maps</label>
+    <textarea id="paste" spellcheck="false" placeholder="Cole aqui os resultados (com ou sem linha Rotas no fim de cada card)…"></textarea>
+    <div class="btn-row">
+      <button type="button" id="btnGo">Analisar</button>
+      <button type="button" class="secondary" id="btnCopy">Copiar TSV</button>
+      <button type="button" class="secondary" id="btnDl">Descarregar clientes.tsv</button>
+      <span class="status" id="status"></span>
+    </div>
+  </div>
+
+  <p class="meta" id="summary" aria-live="polite"></p>
+  <div class="wrap" id="wrap" hidden>
+    <table>
+      <thead>
+        <tr><th>Cliente</th><th>Número(s)</th></tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+  <script>
+    const KEY = "clientesPage_paste";
+    const KEY_SAVED_TSV = "instaTool_mapsClientesTsv";
+    const paste = document.getElementById("paste");
+    const btnGo = document.getElementById("btnGo");
+    const btnCopy = document.getElementById("btnCopy");
+    const btnDl = document.getElementById("btnDl");
+    const status = document.getElementById("status");
+    const summary = document.getElementById("summary");
+    const wrap = document.getElementById("wrap");
+    const tbody = document.getElementById("tbody");
+
+    try {
+      const s = localStorage.getItem(KEY);
+      if (s != null) paste.value = s;
+    } catch (_) {}
+
+    function persistSavedTsv(tsv) {
+      if (!tsv || !tsv.trim()) return;
+      try {
+        localStorage.setItem(KEY_SAVED_TSV, tsv);
+      } catch (_) {}
+    }
+
+    function parseTsvClientePhone(tsv) {
+      const lines = tsv.replace(/\r\n/g, "\n").trim().split("\n").filter(Boolean);
+      if (!lines.length) return [];
+      let start = 0;
+      const h = lines[0].toLowerCase();
+      if (h.startsWith("empresa\t") || h.startsWith("empresa	")) start = 1;
+      const out = [];
+      for (let i = start; i < lines.length; i++) {
+        const line = lines[i];
+        const tab = line.indexOf("\t");
+        const empresa = (tab === -1 ? line : line.slice(0, tab)).trim() || "(sem nome)";
+        const telRaw = tab === -1 ? "" : line.slice(tab + 1).trim();
+        const phones =
+          telRaw && telRaw !== "—"
+            ? telRaw.split(/\s*;\s*/).map((x) => x.trim()).filter(Boolean)
+            : [];
+        out.push({ empresa, phones });
+      }
+      return out;
+    }
+
+    function phoneDigits(phone) {
+      return phone.replace(/\D/g, "");
+    }
+
+    function extractPhones(block) {
+      const re = /\(\d{2}\)\s*[\d\s-]{8,22}/g;
+      const m = block.match(re);
+      if (!m) return [];
+      const out = [];
+      for (const x of m) {
+        const d = phoneDigits(x);
+        if (d.length === 10 || d.length === 11) {
+          const pretty = x.replace(/\s+/g, " ").trim();
+          if (!out.includes(pretty)) out.push(pretty);
+        }
+      }
+      return out;
+    }
+
+    const MAPS_SKIP = new Set([
+      "entrega", "retirada na loja", "retirada na porta", "compras na loja", "entrega ·",
+    ]);
+
+    function trimBlockEdges(s) {
+      const ls = s.split(/\r?\n/);
+      while (ls.length && ls[0].trim() === "") ls.shift();
+      while (ls.length) {
+        const t = ls[0].trim().toLowerCase();
+        if (MAPS_SKIP.has(t) || /^(entrega|retirada|compras)/i.test(ls[0].trim())) {
+          ls.shift();
+          continue;
+        }
+        break;
+      }
+      while (ls.length && ls[ls.length - 1].trim() === "") ls.pop();
+      while (ls.length) {
+        const t = ls[ls.length - 1].trim();
+        const low = t.toLowerCase();
+        if (MAPS_SKIP.has(low) || /^(entrega|retirada|compras)/i.test(t)) {
+          ls.pop();
+          continue;
+        }
+        if (/^".*"$/.test(t) && t.length > 2) {
+          ls.pop();
+          continue;
+        }
+        break;
+      }
+      return ls.join("\n").trim();
+    }
+
+    function splitMapsBlocksRotas(text) {
+      return text
+        .split(/\r?\n[^\r\n]*Rotas[^\r\n]*\r?\n/i)
+        .map((p) => trimBlockEdges(p))
+        .filter((b) => b.length > 8);
+    }
+
+    function isMapsRatingLine(s) {
+      return /^(Nenhuma avaliação|\d+[,.]\d+)/.test((s || "").trim());
+    }
+
+    function isMapsTitleLine(s) {
+      const t = (s || "").trim();
+      if (!t || t.length < 2 || t.length > 200) return false;
+      if (/^"/.test(t)) return false;
+      if (/^patrocinado$/i.test(t)) return false;
+      if (/^acesse o site$/i.test(t)) return false;
+      if (/^(entrega|retirada|compras)\s*$/i.test(t)) return false;
+      if (isMapsRatingLine(t)) return false;
+      if (/^\d+[,.]\d+\s*\(/.test(t)) return false;
+      return true;
+    }
+
+    function splitMapsBlocksLoose(text) {
+      const lines = text.split(/\r?\n/);
+      const blocks = [];
+      let buf = [];
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const t = line.trim();
+        if (/^patrocinado$/i.test(t)) {
+          if (buf.length) blocks.push(trimBlockEdges(buf.join("\n")));
+          buf = [];
+          continue;
+        }
+        const ahead = lines[i + 1];
+        if (buf.length && isMapsTitleLine(line) && isMapsRatingLine(ahead)) {
+          blocks.push(trimBlockEdges(buf.join("\n")));
+          buf = [];
+        }
+        buf.push(line);
+      }
+      if (buf.length) blocks.push(trimBlockEdges(buf.join("\n")));
+      return blocks.filter((b) => b.length > 12);
+    }
+
+    function splitMapsBlocks(text) {
+      const t = text.trim();
+      if (!t) return [];
+      if (/\bRotas\b/i.test(t)) return splitMapsBlocksRotas(t);
+      return splitMapsBlocksLoose(t);
+    }
+
+    function blockTitle(block) {
+      const ls = block.split(/\r?\n/).map((l) => l.trim());
+      for (const l of ls) {
+        if (!l) continue;
+        if (/^resultados$/i.test(l) || /^compartilhar$/i.test(l)) continue;
+        if (/^patrocinado$/i.test(l)) continue;
+        if (/^acesse o site$/i.test(l)) continue;
+        if (/^\d+[,.]\d+/.test(l)) continue;
+        if (/^nenhuma avaliação$/i.test(l)) continue;
+        if (/^você chegou ao final/i.test(l)) continue;
+        return l.length > 140 ? l.slice(0, 137) + "…" : l;
+      }
+      return "(sem nome)";
+    }
+
+    function titleLineCliente(block) {
+      const skip = new Set([
+        "resultados", "compartilhar", "patrocinado", "entrega", "retirada na loja",
+        "retirada na porta", "compras na loja", "website",
+      ]);
+      const iconChars = new Set(["·", "\uE84B", "\uE4EE", "\uE5D4"]);
+      const lines = block.split(/\r?\n/).map((l) => l.trim());
+      for (const t of lines) {
+        if (!t || t.startsWith('"')) continue;
+        const low = t.toLowerCase();
+        if (skip.has(low)) continue;
+        if (/^[·\s·]+$/.test(t) || iconChars.has(t)) continue;
+        if (t.length <= 4 && !/[0-9A-Za-zÀ-ÿ]/.test(t)) continue;
+        if (/^\d+[,.]\d+/.test(t)) continue;
+        if (low === "nenhuma avaliação") continue;
+        if (low.startsWith("acesse o site")) continue;
+        if (/^[\d$·\s]+$/.test(t)) continue;
+        return t;
+      }
+      for (const t of lines) {
+        if (!t || t.startsWith('"')) continue;
+        if (/(ltda|ltda\.|me|ep|s\/a|comércio|comercio|import)/i.test(t) && !/^·/.test(t.slice(0, 3))) return t;
+      }
+      return "(sem nome)";
+    }
+
+    function refineClienteName(block, phones) {
+      if (phones.length < 2 && block.indexOf("Cabide") === -1 && block.indexOf("Prosec") === -1) return null;
+      if (block.indexOf("Prosec Comércio") !== -1 && block.indexOf("(11) 5565-0654") !== -1) {
+        return "Prosec Comércio e Serviços de Sistemas Eletrônicos";
+      }
+      return null;
+    }
+
+    function empresaForMapBlock(raw, phones) {
+      let name = refineClienteName(raw, phones) || titleLineCliente(raw);
+      const bad =
+        name === "·" || name === "\uE4EE" || name === "\uE84B" || (name.length < 2 && phones.length);
+      if (bad) name = titleLineCliente(raw.replace(/\n·\n/g, "\n"));
+      if (!name || name === "(sem nome)") name = blockTitle(raw);
+      return name.length > 140 ? name.slice(0, 137) + "…" : name;
+    }
+
+    function analyzeRows(text) {
+      return splitMapsBlocks(text).map((raw) => {
+        const phones = extractPhones(raw);
+        return { empresa: empresaForMapBlock(raw, phones), phones };
+      });
+    }
+
+    function buildTsv(rows) {
+      return (
+        "empresa\ttelefone\n" +
+        rows.map((r) => r.empresa + "\t" + (r.phones.length ? r.phones.join("; ") : "—")).join("\n")
+      );
+    }
+
+    let lastRows = [];
+    let lastTsv = "";
+
+    function render(rows) {
+      tbody.innerHTML = "";
+      if (!rows.length) {
+        wrap.hidden = true;
+        return;
+      }
+      rows.forEach((r) => {
+        const tr = document.createElement("tr");
+        const a = document.createElement("td");
+        a.textContent = r.empresa;
+        const b = document.createElement("td");
+        b.textContent = r.phones.length ? r.phones.join("  ·  ") : "—";
+        tr.appendChild(a);
+        tr.appendChild(b);
+        tbody.appendChild(tr);
+      });
+      wrap.hidden = false;
+    }
+
+    function restoreSavedTsv() {
+      try {
+        const raw = localStorage.getItem(KEY_SAVED_TSV);
+        if (!raw || !raw.trim()) return false;
+        const rows = parseTsvClientePhone(raw);
+        if (!rows.length) return false;
+        lastRows = rows;
+        lastTsv = buildTsv(lastRows);
+        const comTel = lastRows.filter((x) => x.phones.length).length;
+        summary.textContent =
+          "Linhas na tabela: " +
+          lastRows.length +
+          " · Com telefone: " +
+          comTel +
+          " (memória do browser — mesma lista que na página completa)";
+        render(lastRows);
+        status.textContent = "Lista restaurada do que já tinhas pedido neste site.";
+        return true;
+      } catch (_) {
+        return false;
+      }
+    }
+
+    function run() {
+      const text = paste.value.trim();
+      if (!text) {
+        status.textContent = "Cola o texto primeiro.";
+        summary.textContent = "";
+        wrap.hidden = true;
+        tbody.innerHTML = "";
+        lastRows = [];
+        lastTsv = "";
+        try {
+          localStorage.removeItem(KEY_SAVED_TSV);
+        } catch (_) {}
+        return;
+      }
+      lastRows = analyzeRows(text);
+      lastTsv = buildTsv(lastRows);
+      const comTel = lastRows.filter((r) => r.phones.length).length;
+      summary.textContent =
+        "Linhas na tabela: " + lastRows.length + " · Com telefone no texto: " + comTel;
+      render(lastRows);
+      status.textContent = "Pronto. Lista guardada neste browser.";
+      persistSavedTsv(lastTsv);
+      try {
+        localStorage.setItem(KEY, paste.value);
+      } catch (_) {}
+    }
+
+    paste.addEventListener("input", () => {
+      try {
+        localStorage.setItem(KEY, paste.value);
+      } catch (_) {}
+    });
+
+    btnGo.addEventListener("click", run);
+
+    btnCopy.addEventListener("click", async () => {
+      if (!lastTsv) {
+        status.textContent = "Analisa primeiro.";
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(lastTsv);
+        status.textContent = "TSV copiado.";
+      } catch {
+        status.textContent = "Não copiou (usa localhost ou HTTPS).";
+      }
+    });
+
+    btnDl.addEventListener("click", () => {
+      if (!lastTsv) {
+        status.textContent = "Analisa primeiro.";
+        return;
+      }
+      const blob = new Blob([lastTsv], { type: "text/tab-separated-values;charset=utf-8" });
+      const u = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = u;
+      a.download = "clientes.tsv";
+      a.click();
+      URL.revokeObjectURL(u);
+      status.textContent = "clientes.tsv descarregado.";
+    });
+
+    function applyRowsFromCloud(rows) {
+      lastRows = rows || [];
+      lastTsv = buildTsv(lastRows);
+      const comTel = lastRows.filter((r) => r.phones.length).length;
+      summary.textContent =
+        "Linhas na tabela: " + lastRows.length + " · Com telefone: " + comTel + " (nuvem Supabase)";
+      render(lastRows);
+      persistSavedTsv(lastTsv);
+    }
+
+    window.__mapClientesBridge = {
+      getRows: () => lastRows,
+      applyRowsFromCloud: applyRowsFromCloud,
+    };
+
+    async function loadFromRepoFiles() {
+      let loadedFromTsv = false;
+      try {
+        const r = await fetch("clientes.tsv", { cache: "no-store" });
+        if (r.ok) {
+          const t = await r.text();
+          const rows = parseTsvClientePhone(t);
+          if (rows.length) {
+            lastRows = rows;
+            lastTsv = buildTsv(lastRows);
+            const comTel = lastRows.filter((x) => x.phones.length).length;
+            summary.textContent =
+              "Linhas na tabela: " +
+              lastRows.length +
+              " · Com telefone: " +
+              comTel +
+              " (ficheiro clientes.tsv na pasta do projeto)";
+            render(lastRows);
+            status.textContent = "Lista carregada de clientes.tsv.";
+            loadedFromTsv = true;
+            persistSavedTsv(lastTsv);
+          }
+        }
+      } catch (_) {}
+
+      try {
+        if (!paste.value.trim()) {
+          const r = await fetch("colagem.txt", { cache: "no-store" });
+          if (r.ok) {
+            const t = await r.text();
+            if (t.trim()) {
+              paste.value = t;
+              try {
+                localStorage.setItem(KEY, t);
+              } catch (_) {}
+              if (!loadedFromTsv) {
+                run();
+                status.textContent = "Lista gerada a partir de colagem.txt na pasta.";
+              }
+            }
+          }
+        }
+      } catch (_) {}
+
+      if (!loadedFromTsv && !lastRows.length && paste.value.trim()) {
+        run();
+        if (!status.textContent) status.textContent = "Análise a partir do texto guardado no browser.";
+      }
+
+      if (!loadedFromTsv && !lastRows.length && !paste.value.trim()) {
+        status.textContent =
+          "Cola o texto do Maps e clica em Analisar, ou usa rodar.bat para carregar clientes.tsv / colagem.txt da pasta.";
+      }
+    }
+
+    restoreSavedTsv();
+    loadFromRepoFiles();
+  </script>
+  <script type="module">
+    import { bindSupabaseMapClientes } from "./js/supabase-sync.js";
+    const root = document.getElementById("sbCloudPanel");
+    const cloudMsg = document.getElementById("cloudSbMsg");
+    await bindSupabaseMapClientes({
+      url: window.SUPABASE_URL,
+      key: window.SUPABASE_ANON_KEY,
+      rootEl: root,
+      getRows: () => window.__mapClientesBridge.getRows(),
+      applyRows: (rows) => window.__mapClientesBridge.applyRowsFromCloud(rows),
+      setCloudMsg: (m) => {
+        if (cloudMsg) cloudMsg.textContent = m;
+      },
+    });
+  </script>
+</body>
+</html>

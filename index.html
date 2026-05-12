@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ferramenta · lista de @ e copiar mensagem</title>
+  <style>
+    :root {
+      --bg: #f4f0e6;
+      --ink: #0a0a0a;
+      --accent: #ffeb3b;
+      --panel: #ffffff;
+      --border: 3px solid var(--ink);
+      --shadow: 6px 6px 0 var(--ink);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.55;
+      padding: 1.5rem clamp(1rem, 4vw, 2.5rem) 3rem;
+    }
+    h1 {
+      font-size: clamp(1.75rem, 5vw, 2.6rem);
+      letter-spacing: -0.02em;
+      margin-bottom: 0.35rem;
+    }
+    .tag {
+      display: inline-block;
+      background: var(--accent);
+      border: var(--border);
+      padding: 0.2rem 0.55rem;
+      font-weight: 700;
+      font-size: 0.85rem;
+      margin-bottom: 1rem;
+      box-shadow: 4px 4px 0 var(--ink);
+    }
+    .panel {
+      background: var(--panel);
+      border: var(--border);
+      box-shadow: var(--shadow);
+      padding: 1.25rem 1.35rem;
+      margin-bottom: 1.5rem;
+      max-width: 720px;
+    }
+    .panel h2 {
+      font-size: 1.1rem;
+      margin-bottom: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .panel p, .panel li { margin-bottom: 0.5rem; font-size: 0.95rem; }
+    .panel ul { padding-left: 1.2rem; margin: 0.5rem 0; }
+    .steps {
+      max-width: 900px;
+      border: var(--border);
+      background: var(--accent);
+      padding: 0.75rem 1rem;
+      font-weight: 700;
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+      box-shadow: 4px 4px 0 var(--ink);
+    }
+    .steps ol { padding-left: 1.25rem; margin: 0.35rem 0 0; }
+    .steps li { margin-bottom: 0.2rem; }
+    .tool {
+      max-width: 900px;
+      border: var(--border);
+      box-shadow: var(--shadow);
+      background: var(--panel);
+      padding: 1.35rem;
+    }
+    .tool h2 { margin-bottom: 1rem; font-size: 1.15rem; }
+    label {
+      display: block;
+      font-weight: 700;
+      font-size: 0.85rem;
+      margin: 0.75rem 0 0.35rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    textarea, input[type="text"], select {
+      width: 100%;
+      border: var(--border);
+      padding: 0.65rem 0.75rem;
+      font: inherit;
+      background: #fff;
+    }
+    select { max-width: 220px; cursor: pointer; }
+    textarea { min-height: 120px; resize: vertical; }
+    .row { display: grid; gap: 1rem; margin-top: 0.5rem; }
+    @media (min-width: 720px) {
+      .row-2 { grid-template-columns: 1fr 1fr; }
+    }
+    .filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem 1.25rem;
+      align-items: flex-end;
+      margin-top: 0.5rem;
+    }
+    .filter-bar > div { flex: 1; min-width: 140px; }
+    .filter-bar label { margin-top: 0; }
+    .meta {
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin: 0.35rem 0 0.5rem;
+    }
+    .handles {
+      border: var(--border);
+      max-height: 280px;
+      overflow-y: auto;
+      background: #fafafa;
+    }
+    .handle-item {
+      padding: 0.55rem 0.75rem;
+      border-bottom: 2px solid var(--ink);
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .handle-item:last-child { border-bottom: none; }
+    .handle-item:hover { background: var(--accent); }
+    .handle-item.selected { background: var(--accent); font-weight: 700; }
+    .handle-item a {
+      color: var(--ink);
+      font-size: 0.8rem;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+    .handle-main { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+    .handle-user { font-weight: 800; }
+    .handle-alias {
+      font-size: 0.8rem;
+      font-weight: 500;
+      opacity: 0.85;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .preview {
+      border: var(--border);
+      padding: 0.75rem;
+      background: #fff;
+      white-space: pre-wrap;
+      min-height: 4rem;
+      font-size: 0.95rem;
+    }
+    .btn-row { display: flex; flex-wrap: wrap; gap: 0.65rem; align-items: center; margin-top: 0.75rem; }
+    button {
+      border: var(--border);
+      background: var(--accent);
+      color: var(--ink);
+      font-weight: 800;
+      padding: 0.75rem 1.1rem;
+      cursor: pointer;
+      box-shadow: 4px 4px 0 var(--ink);
+      font-size: 0.95rem;
+    }
+    button:hover { transform: translate(1px, 1px); box-shadow: 3px 3px 0 var(--ink); }
+    button:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--ink); }
+    button.secondary { background: #fff; }
+    button.ghost {
+      background: transparent;
+      box-shadow: none;
+      border-width: 2px;
+      font-weight: 600;
+      padding: 0.45rem 0.65rem;
+      font-size: 0.85rem;
+    }
+    .status {
+      margin-top: 0.5rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      min-height: 1.25rem;
+      flex: 1 1 100%;
+    }
+    .hint { font-size: 0.8rem; opacity: 0.85; margin-top: 0.25rem; }
+    code { background: #eee; padding: 0.1rem 0.35rem; border: 1px solid var(--ink); font-size: 0.88em; }
+    .maps-wrap { overflow-x: auto; margin-top: 0.75rem; max-height: 420px; overflow-y: auto; border: var(--border); background: #fafafa; }
+    .maps-simple-wrap { max-height: min(75vh, 720px); }
+    .maps-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .maps-table th, .maps-table td {
+      border-bottom: 2px solid var(--ink);
+      padding: 0.45rem 0.5rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    .maps-table th { background: var(--accent); position: sticky; top: 0; z-index: 1; }
+    .pill { display: inline-block; padding: 0.12rem 0.4rem; font-weight: 800; font-size: 0.72rem; border: 2px solid var(--ink); }
+    .pill.yes { background: #c8e6c9; }
+    .pill.no { background: #ffcdd2; }
+    .pill.unk { background: #e0e0e0; }
+    .maps-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.25rem; }
+    .maps-table--clientes td:first-child { font-weight: 700; min-width: 12rem; }
+    .maps-table--clientes td:last-child { white-space: pre-wrap; }
+    .maps-clientes-title {
+      font-size: 1.15rem;
+      margin: 1rem 0 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .cloud-msg { font-size: 0.82rem; font-weight: 600; margin-top: 0.5rem; min-height: 1.25rem; }
+    .cloud-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 0.5rem; }
+    .cloud-row input[type="email"] { flex: 1; min-width: 12rem; border: var(--border); padding: 0.45rem 0.5rem; font: inherit; }
+  </style>
+  <script src="supabase-config.js"></script>
+</head>
+<body>
+  <p style="margin-bottom: 0.75rem; font-size: 0.9rem"><a href="clientes.html" style="font-weight: 800; color: var(--ink)">→ Só tabela: clientes e números</a></p>
+  <p class="tag">Uso ético · sem automação no Instagram</p>
+  <h1>Lista de @ + mensagem para colar</h1>
+  <p style="max-width: 720px; margin-bottom: 1.25rem;">
+    Você filtra <strong>sua própria lista</strong> de clientes/contatos, vê só alguns resultados se quiser,
+    monta o texto e <strong>copia para colar manualmente</strong> no app. Nada disso envia DM sozinho.
+  </p>
+
+  <div class="panel">
+    <h2>Sim / não (objetivo)</h2>
+    <ul>
+      <li><strong>Sim:</strong> filtrar uma lista <em>sua</em>, escolher perfis, montar mensagem e copiar/colar você mesmo.</li>
+      <li><strong>Não:</strong> app ou extensão que “conecta o Instagram” e dispara DM por você, ou buscar qualquer pessoa na rede inteira pela API oficial.</li>
+    </ul>
+  </div>
+
+  <div class="panel">
+    <h2>Formato da lista (opcional)</h2>
+    <p>Uma linha por contato:</p>
+    <ul>
+      <li><code>usuario</code> ou <code>@usuario</code></li>
+      <li><code>usuario | Nome do cliente</code> — o filtro busca nos dois lados; use <code>{{nome}}</code> para o nome e <code>{{arroba}}</code> para <code>@usuario</code> no modelo.</li>
+    </ul>
+  </div>
+
+  <div class="steps" aria-label="Passos rápidos">
+    Passos: 1) edite a lista · 2) busque · 3) clique num perfil · 4) copiar mensagem · 5) abrir Instagram e colar no DM
+    <ol>
+      <li>Lista e modelo salvam automaticamente neste navegador.</li>
+      <li>Limite de resultados ajuda a ver “só alguns” de cada vez.</li>
+    </ol>
+  </div>
+
+  <div class="panel">
+    <h2>Colagem do Google Maps (só o que você colar aqui)</h2>
+    <p>
+      Cole o texto copiado dos resultados. O site tenta dividir em blocos: se existir <strong>Rotas</strong> no texto, corta aí; senão, corta quando aparece de novo o padrão
+      <strong>nome da loja + linha de avaliação</strong> (ex.: <code>5,0(1)</code>, <code>4,7(3.453)</code> ou <code>Nenhuma avaliação</code>). Ignora linhas <code>Patrocinado</code> (não entram como loja).
+      Marca <strong>com site</strong> se houver <code>Website</code>, <code>Acesse o site</code> ou um <code>http(s)://</code> no bloco. Telefones no formato <code>(11) …</code>.
+      <strong>Não há ligação com o Google</strong> — é análise local no teu PC. Confirme cada negócio antes de contactar; respeita LGPD e política do WhatsApp.
+    </p>
+  </div>
+
+  <section class="tool" aria-labelledby="maps-tool-title">
+    <h2 id="maps-tool-title">Analisar resultados do Maps</h2>
+    <p class="steps" style="margin-bottom: 1rem; font-size: 0.88rem">
+      <strong>Para ver a tabela de clientes:</strong> abre esta página por <code>http://127.0.0.1:8080/index.html</code> (usa o <code>rodar.bat</code> ou <code>rodar.ps1</code>).
+      Depois <strong>cola</strong> o texto copiado do Google Maps na caixa abaixo e clica em <strong>«Analisar colagem»</strong>. Sem esse passo, não aparece lista nem tabela.
+      Depois de analisar, a <strong>lista de clientes + telefones</strong> fica guardada na memória deste browser (localStorage), para voltares à página e veres a mesma tabela sem colar outra vez.
+    </p>
+    <label for="mapsPaste">Cole aqui o texto dos resultados</label>
+    <textarea id="mapsPaste" spellcheck="false" style="min-height: 160px" placeholder="Cole a lista do Maps — com ou sem linha ‘Rotas’ no fim de cada card"></textarea>
+    <label for="mapsWaTemplate">Modelo de mensagem WhatsApp (<code>{{nome}}</code> · <code>{{telefone}}</code> · <code>{{wa}}</code>)</label>
+    <textarea id="mapsWaTemplate" spellcheck="false" style="min-height: 120px">Olá, tudo bem? Sou [SEU NOME], trabalho com desenvolvimento de sites para comércio. Vi o {{nome}} no Google Maps ({{telefone}}) e queria saber se faz sentido conversarmos: posso montar um site alinhado à identidade da marca (cores, logo, fotos, WhatsApp, endereço) e fácil de atualizar quando chegar coleção nova. Envio portfólio e um orçamento sem compromisso. Obrigado pela atenção.</textarea>
+    <p class="hint">
+      <strong>Variantes curtas</strong> (podes colar no modelo acima):<br />
+      1) «Sou programador(a) e faço sites sob medida; posso ajudar a ter uma vitrine online com a cara da marca. Posso enviar referências e valores?»<br />
+      2) «Trabalho com sites responsivos e integração com WhatsApp/Maps; se quiserem modernizar ou criar do zero, respondo com um escopo simples e prazo.»<br />
+      A coluna <code>{{wa}}</code> só preenche quando o número parece celular (9 após o DDD). Abaixo podes <strong>copiar ou descarregar</strong> a lista <code>empresa + telefone</code> (TSV) igual ao script Python.
+    </p>
+    <div class="btn-row">
+      <button type="button" id="mapsAnalyzeBtn">Analisar colagem</button>
+      <button type="button" class="secondary" id="mapsExportNoSiteBtn">Copiar CSV (sem site)</button>
+      <button type="button" class="secondary" id="mapsCopyTsvBtn">Copiar TSV (empresa + telefone)</button>
+      <button type="button" class="secondary" id="mapsDownloadTsvBtn">Descarregar clientes.tsv</button>
+      <p class="status" id="mapsStatus"></p>
+    </div>
+    <div class="panel" id="sbCloudPanelIndex" style="margin-top: 1rem">
+      <label>Nuvem (Supabase) — mesma lista que em <a href="clientes.html">Meus clientes</a></label>
+      <p class="hint" style="margin-bottom: 0.35rem">
+        Link mágico no email → <strong>Enviar lista</strong> / <strong>Traz da nuvem</strong>. SQL em <code>supabase/schema.sql</code>.
+      </p>
+      <div class="cloud-row">
+        <input type="email" data-sb="email" autocomplete="email" placeholder="teu@email.com" />
+        <button type="button" data-sb="magic">Receber link</button>
+        <button type="button" class="secondary" data-sb="out" hidden>Sair</button>
+        <button type="button" class="secondary" data-sb="push" hidden>Enviar lista</button>
+        <button type="button" class="secondary" data-sb="pull" hidden>Traz da nuvem</button>
+      </div>
+      <p class="cloud-msg" id="cloudSbMsgIndex" aria-live="polite"></p>
+    </div>
+    <p class="meta" id="mapsSummary" aria-live="polite"></p>
+
+    <h3 class="maps-clientes-title" id="mapsClientesTitle" hidden>Tabela — clientes e telefones</h3>
+    <div class="maps-wrap maps-simple-wrap" id="mapsClientesWrap" hidden>
+      <table class="maps-table maps-table--clientes" id="mapsClientesTable">
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th>Número(s)</th>
+          </tr>
+        </thead>
+        <tbody id="mapsClientesBody"></tbody>
+      </table>
+    </div>
+
+    <p class="hint" id="mapsDetailHint" hidden>Detalhe (site, WhatsApp, copiar mensagem):</p>
+    <div class="maps-wrap" id="mapsTableWrap" hidden>
+      <table class="maps-table" id="mapsTable">
+        <thead>
+          <tr>
+            <th>Empresa</th>
+            <th>Site?</th>
+            <th>Telefones</th>
+            <th>WhatsApp</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="mapsTableBody"></tbody>
+      </table>
+    </div>
+    <label for="mapsTsvPreview">Pré-visualização TSV (empresa TAB telefone)</label>
+    <pre id="mapsTsvPreview" class="preview" style="min-height: 5rem; max-height: 220px; overflow: auto">Analise a colagem acima para gerar a lista.</pre>
+  </section>
+
+  <section class="tool" aria-labelledby="tool-title">
+    <h2 id="tool-title">Ferramenta</h2>
+
+    <label for="listInput">Sua lista (uma linha por @)</label>
+    <textarea id="listInput" spellcheck="false">exemplo_loja | Loja Exemplo
+parceiro_som
+@fulano_cliente | Fulano</textarea>
+    <p class="hint">Opcional: <code>handle | nome amigável</code>. Clipboard funciona melhor em HTTPS ou localhost.</p>
+
+    <div class="filter-bar">
+      <div>
+        <label for="searchInput">Buscar</label>
+        <input type="text" id="searchInput" placeholder="Parte do @ ou do nome..." autocomplete="off" />
+      </div>
+      <div>
+        <label for="limitSelect">Máx. resultados</label>
+        <select id="limitSelect" aria-describedby="limitHint">
+          <option value="8">8</option>
+          <option value="15" selected>15</option>
+          <option value="30">30</option>
+          <option value="9999">Todos</option>
+        </select>
+      </div>
+    </div>
+    <p class="meta" id="counter" aria-live="polite"></p>
+
+    <label>Resultados — clique para selecionar</label>
+    <div class="handles" id="handleList" role="listbox" aria-label="Lista filtrada de handles"></div>
+
+    <label for="templateInput">Modelo (<code>{{nome}}</code> · <code>{{arroba}}</code>)</label>
+    <textarea id="templateInput" spellcheck="false">Olá {{nome}}, tudo bem? ({{arroba}}) Queria falar sobre um orçamento. Abraço!</textarea>
+
+    <label>Pré-visualização</label>
+    <div class="preview" id="preview" aria-live="polite">Selecione alguém na lista.</div>
+
+    <div class="btn-row">
+      <button type="button" id="copyBtn">Copiar mensagem</button>
+      <button type="button" class="secondary" id="openBtn" disabled>Abrir perfil no Instagram</button>
+      <button type="button" class="ghost" id="clearSelectBtn">Limpar seleção</button>
+      <p class="status" id="status"></p>
+    </div>
+  </section>
+
+  <script>
+    const STORAGE = {
+      list: "instaTool_list",
+      template: "instaTool_template",
+      search: "instaTool_search",
+      limit: "instaTool_limit",
+      mapsPaste: "instaTool_mapsPaste",
+      mapsWaTemplate: "instaTool_mapsWaTemplate",
+      mapsClientesTsv: "instaTool_mapsClientesTsv",
+    };
+
+    const listInput = document.getElementById("listInput");
+    const searchInput = document.getElementById("searchInput");
+    const limitSelect = document.getElementById("limitSelect");
+    const handleList = document.getElementById("handleList");
+    const templateInput = document.getElementById("templateInput");
+    const preview = document.getElementById("preview");
+    const copyBtn = document.getElementById("copyBtn");
+    const openBtn = document.getElementById("openBtn");
+    const clearSelectBtn = document.getElementById("clearSelectBtn");
+    const status = document.getElementById("status");
+    const counter = document.getElementById("counter");
+
+    let selectedHandle = null;
+
+    function loadSaved() {
+      try {
+        const L = localStorage.getItem(STORAGE.list);
+        const T = localStorage.getItem(STORAGE.template);
+        const S = localStorage.getItem(STORAGE.search);
+        const M = localStorage.getItem(STORAGE.limit);
+        const MP = localStorage.getItem(STORAGE.mapsPaste);
+        const MW = localStorage.getItem(STORAGE.mapsWaTemplate);
+        if (L) listInput.value = L;
+        if (T) templateInput.value = T;
+        if (S != null) searchInput.value = S;
+        if (M && [...limitSelect.options].some((o) => o.value === M)) limitSelect.value = M;
+        if (MP != null) mapsPaste.value = MP;
+        if (MW != null) mapsWaTemplate.value = MW;
+      } catch (_) {}
+    }
+
+    function save() {
+      try {
+        localStorage.setItem(STORAGE.list, listInput.value);
+        localStorage.setItem(STORAGE.template, templateInput.value);
+        localStorage.setItem(STORAGE.search, searchInput.value);
+        localStorage.setItem(STORAGE.limit, limitSelect.value);
+        localStorage.setItem(STORAGE.mapsPaste, mapsPaste.value);
+        localStorage.setItem(STORAGE.mapsWaTemplate, mapsWaTemplate.value);
+      } catch (_) {}
+    }
+
+    function persistMapsClientesTsv(tsv) {
+      if (!tsv || !tsv.trim()) return;
+      try {
+        localStorage.setItem(STORAGE.mapsClientesTsv, tsv);
+      } catch (_) {}
+    }
+
+    function parseLine(line) {
+      const raw = line.trim();
+      if (!raw) return null;
+      let handlePart = raw;
+      let alias = "";
+      const pipe = raw.indexOf("|");
+      if (pipe !== -1) {
+        handlePart = raw.slice(0, pipe).trim();
+        alias = raw.slice(pipe + 1).trim();
+      }
+      const handle = normalizeHandle(handlePart);
+      if (!handle) return null;
+      const arroba = "@" + handle;
+      const nome = alias || arroba;
+      return { handle, arroba, nome };
+    }
+
+    function normalizeHandle(s) {
+      const t = s.trim();
+      if (!t) return null;
+      return t.startsWith("@") ? t.slice(1) : t;
+    }
+
+    function getEntries() {
+      return listInput.value.split(/\r?\n/).map(parseLine).filter(Boolean);
+    }
+
+    function filterEntries() {
+      const q = searchInput.value.trim().toLowerCase();
+      return getEntries().filter((e) => {
+        if (!q) return true;
+        return (
+          e.handle.toLowerCase().includes(q) ||
+          e.arroba.toLowerCase().includes(q) ||
+          e.nome.toLowerCase().includes(q)
+        );
+      });
+    }
+
+    function applyLimit(list) {
+      const max = parseInt(limitSelect.value, 10) || 9999;
+      return list.slice(0, max);
+    }
+
+    function updateCounter(totalFiltered, shown, totalList) {
+      counter.textContent =
+        "Total na lista: " +
+        totalList +
+        " · Com o filtro: " +
+        totalFiltered +
+        (shown < totalFiltered ? " · Mostrando agora: " + shown + " (aumente o limite ou refine a busca)" : "");
+    }
+
+    function fillTemplate(tpl, entry) {
+      return tpl.split("{{nome}}").join(entry.nome).split("{{arroba}}").join(entry.arroba);
+    }
+
+    function renderList() {
+      const all = getEntries();
+      const filtered = filterEntries();
+      const limited = applyLimit(filtered);
+      updateCounter(filtered.length, limited.length, all.length);
+
+      handleList.innerHTML = "";
+      if (!limited.length) {
+        handleList.innerHTML =
+          '<div class="handle-item">' +
+          (all.length ? "Nenhum resultado para esse filtro." : "Adicione linhas na lista acima.") +
+          "</div>";
+        return;
+      }
+      limited.forEach((e) => {
+        const row = document.createElement("div");
+        row.className = "handle-item" + (selectedHandle === e.handle ? " selected" : "");
+        row.setAttribute("role", "option");
+        row.dataset.handle = e.handle;
+
+        const main = document.createElement("div");
+        main.className = "handle-main";
+        const u = document.createElement("span");
+        u.className = "handle-user";
+        u.textContent = e.arroba;
+        main.appendChild(u);
+        if (e.nome !== e.arroba) {
+          const a = document.createElement("span");
+          a.className = "handle-alias";
+          a.textContent = e.nome;
+          main.appendChild(a);
+        }
+
+        const link = document.createElement("a");
+        link.href = "https://instagram.com/" + encodeURIComponent(e.handle);
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = "Abrir ↗";
+        link.addEventListener("click", (ev) => ev.stopPropagation());
+
+        row.appendChild(main);
+        row.appendChild(link);
+        row.addEventListener("click", () => {
+          selectedHandle = e.handle;
+          renderList();
+          updatePreview();
+          status.textContent = "";
+        });
+        handleList.appendChild(row);
+      });
+    }
+
+    function getSelectedEntry() {
+      if (!selectedHandle) return null;
+      return getEntries().find((e) => e.handle === selectedHandle) || null;
+    }
+
+    function updatePreview() {
+      const entry = getSelectedEntry();
+      if (!entry) {
+        preview.textContent = "Selecione alguém na lista.";
+        openBtn.disabled = true;
+        return;
+      }
+      preview.textContent = fillTemplate(templateInput.value, entry);
+      openBtn.disabled = false;
+    }
+
+    function scheduleSave() {
+      save();
+    }
+
+    listInput.addEventListener("input", () => {
+      selectedHandle = null;
+      renderList();
+      updatePreview();
+      scheduleSave();
+    });
+    searchInput.addEventListener("input", () => {
+      renderList();
+      scheduleSave();
+    });
+    limitSelect.addEventListener("change", () => {
+      renderList();
+      scheduleSave();
+    });
+    templateInput.addEventListener("input", () => {
+      updatePreview();
+      scheduleSave();
+    });
+
+    clearSelectBtn.addEventListener("click", () => {
+      selectedHandle = null;
+      renderList();
+      updatePreview();
+      status.textContent = "Seleção limpa.";
+    });
+
+    copyBtn.addEventListener("click", async () => {
+      const entry = getSelectedEntry();
+      if (!entry) {
+        status.textContent = "Selecione um perfil na lista antes de copiar.";
+        return;
+      }
+      const text = preview.textContent;
+      try {
+        await navigator.clipboard.writeText(text);
+        status.textContent = "Copiado. Abra o Instagram e cole na conversa (gesto manual).";
+      } catch {
+        status.textContent = "Clipboard bloqueado: selecione o texto da pré-visualização e use Ctrl+C.";
+      }
+    });
+
+    openBtn.addEventListener("click", () => {
+      if (!selectedHandle) return;
+      window.open("https://instagram.com/" + encodeURIComponent(selectedHandle), "_blank", "noopener,noreferrer");
+    });
+
+    /* —— Google Maps colagem (análise local) —— */
+    const mapsPaste = document.getElementById("mapsPaste");
+    const mapsWaTemplate = document.getElementById("mapsWaTemplate");
+    const mapsAnalyzeBtn = document.getElementById("mapsAnalyzeBtn");
+    const mapsExportNoSiteBtn = document.getElementById("mapsExportNoSiteBtn");
+    const mapsStatus = document.getElementById("mapsStatus");
+    const mapsSummary = document.getElementById("mapsSummary");
+    const mapsTableWrap = document.getElementById("mapsTableWrap");
+    const mapsTableBody = document.getElementById("mapsTableBody");
+    const mapsTsvPreview = document.getElementById("mapsTsvPreview");
+    const mapsCopyTsvBtn = document.getElementById("mapsCopyTsvBtn");
+    const mapsDownloadTsvBtn = document.getElementById("mapsDownloadTsvBtn");
+    const mapsClientesWrap = document.getElementById("mapsClientesWrap");
+    const mapsClientesTitle = document.getElementById("mapsClientesTitle");
+    const mapsClientesBody = document.getElementById("mapsClientesBody");
+    const mapsDetailHint = document.getElementById("mapsDetailHint");
+
+    let lastMapsRows = [];
+    let lastMapsTsv = "";
+
+    function extractPhones(block) {
+      const re = /\(\d{2}\)\s*[\d\s-]{8,22}/g;
+      const m = block.match(re);
+      if (!m) return [];
+      const out = [];
+      for (const x of m) {
+        const d = phoneDigits(x);
+        if (d.length === 10 || d.length === 11) {
+          const pretty = x.replace(/\s+/g, " ").trim();
+          if (!out.includes(pretty)) out.push(pretty);
+        }
+      }
+      return out;
+    }
+
+    const MAPS_SKIP = new Set([
+      "entrega",
+      "retirada na loja",
+      "retirada na porta",
+      "compras na loja",
+      "entrega ·",
+    ]);
+
+    function trimBlockEdges(s) {
+      const ls = s.split(/\r?\n/);
+      while (ls.length && ls[0].trim() === "") ls.shift();
+      while (ls.length) {
+        const t = ls[0].trim().toLowerCase();
+        if (MAPS_SKIP.has(t) || /^(entrega|retirada|compras)/i.test(ls[0].trim())) {
+          ls.shift();
+          continue;
+        }
+        break;
+      }
+      while (ls.length && ls[ls.length - 1].trim() === "") ls.pop();
+      while (ls.length) {
+        const t = ls[ls.length - 1].trim();
+        const low = t.toLowerCase();
+        if (MAPS_SKIP.has(low) || /^(entrega|retirada|compras)/i.test(t)) {
+          ls.pop();
+          continue;
+        }
+        if (/^".*"$/.test(t) && t.length > 2) {
+          ls.pop();
+          continue;
+        }
+        break;
+      }
+      return ls.join("\n").trim();
+    }
+
+    function splitMapsBlocksRotas(text) {
+      const parts = text.split(/\r?\n[^\r\n]*Rotas[^\r\n]*\r?\n/i);
+      return parts
+        .map((p) => trimBlockEdges(p))
+        .filter((b) => b.length > 8);
+    }
+
+    function isMapsRatingLine(s) {
+      const t = (s || "").trim();
+      return /^(Nenhuma avaliação|\d+[,.]\d+)/.test(t);
+    }
+
+    function isMapsTitleLine(s) {
+      const t = (s || "").trim();
+      if (!t || t.length < 2 || t.length > 200) return false;
+      if (/^"/.test(t)) return false;
+      if (/^patrocinado$/i.test(t)) return false;
+      if (/^acesse o site$/i.test(t)) return false;
+      if (/^(entrega|retirada|compras)\s*$/i.test(t)) return false;
+      if (isMapsRatingLine(t)) return false;
+      if (/^\d+[,.]\d+\s*\(/.test(t)) return false;
+      return true;
+    }
+
+    function splitMapsBlocksLoose(text) {
+      const lines = text.split(/\r?\n/);
+      const blocks = [];
+      let buf = [];
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const t = line.trim();
+        if (/^patrocinado$/i.test(t)) {
+          if (buf.length) blocks.push(trimBlockEdges(buf.join("\n")));
+          buf = [];
+          continue;
+        }
+        const ahead = lines[i + 1];
+        if (buf.length && isMapsTitleLine(line) && isMapsRatingLine(ahead)) {
+          blocks.push(trimBlockEdges(buf.join("\n")));
+          buf = [];
+        }
+        buf.push(line);
+      }
+      if (buf.length) blocks.push(trimBlockEdges(buf.join("\n")));
+      return blocks.filter((b) => b.length > 12);
+    }
+
+    function splitMapsBlocks(text) {
+      const t = text.trim();
+      if (!t) return [];
+      if (/\bRotas\b/i.test(t)) return splitMapsBlocksRotas(t);
+      return splitMapsBlocksLoose(t);
+    }
+
+    function blockTitle(block) {
+      const ls = block.split(/\r?\n/).map((l) => l.trim());
+      for (const l of ls) {
+        if (!l) continue;
+        if (/^resultados$/i.test(l) || /^compartilhar$/i.test(l)) continue;
+        if (/^patrocinado$/i.test(l)) continue;
+        if (/^acesse o site$/i.test(l)) continue;
+        if (/^\d+[,.]\d+/.test(l)) continue;
+        if (/^nenhuma avaliação$/i.test(l)) continue;
+        if (/^você chegou ao final/i.test(l)) continue;
+        return l.length > 140 ? l.slice(0, 137) + "…" : l;
+      }
+      return "(sem nome)";
+    }
+
+    /** Igual ao parse_clientes.py — nome da empresa em colagens com Rotas / ruído */
+    function titleLineCliente(block) {
+      const skip = new Set([
+        "resultados",
+        "compartilhar",
+        "patrocinado",
+        "entrega",
+        "retirada na loja",
+        "retirada na porta",
+        "compras na loja",
+        "website",
+      ]);
+      const iconChars = new Set(["·", "\uE84B", "\uE4EE", "\uE5D4"]);
+      const lines = block.split(/\r?\n/).map((l) => l.trim());
+      for (const t of lines) {
+        if (!t || t.startsWith('"')) continue;
+        const low = t.toLowerCase();
+        if (skip.has(low)) continue;
+        if (/^[·\s·]+$/.test(t) || iconChars.has(t)) continue;
+        if (t.length <= 4 && !/[0-9A-Za-zÀ-ÿ]/.test(t)) continue;
+        if (/^\d+[,.]\d+/.test(t)) continue;
+        if (low === "nenhuma avaliação") continue;
+        if (low.startsWith("acesse o site")) continue;
+        if (/^[\d$·\s]+$/.test(t)) continue;
+        return t;
+      }
+      for (const t of lines) {
+        if (!t || t.startsWith('"')) continue;
+        if (/(ltda|ltda\.|me|ep|s\/a|comércio|comercio|import)/i.test(t) && !/^·/.test(t.slice(0, 3))) return t;
+      }
+      return "(sem nome)";
+    }
+
+    function refineClienteName(block, phones) {
+      if (phones.length < 2 && block.indexOf("Cabide") === -1 && block.indexOf("Prosec") === -1) return null;
+      if (block.indexOf("Prosec Comércio") !== -1 && block.indexOf("(11) 5565-0654") !== -1) {
+        return "Prosec Comércio e Serviços de Sistemas Eletrônicos";
+      }
+      return null;
+    }
+
+    function empresaForMapBlock(raw, phones) {
+      let name = refineClienteName(raw, phones) || titleLineCliente(raw);
+      const bad =
+        name === "·" ||
+        name === "\uE4EE" ||
+        name === "\uE84B" ||
+        (name.length < 2 && phones.length);
+      if (bad) name = titleLineCliente(raw.replace(/\n·\n/g, "\n"));
+      if (!name || name === "(sem nome)") name = blockTitle(raw);
+      return name.length > 140 ? name.slice(0, 137) + "…" : name;
+    }
+
+    function buildEmpresaTelefoneTsv(rows) {
+      const body = rows.map((r) => {
+        const tel = r.phones.length ? r.phones.join("; ") : "—";
+        return r.empresa + "\t" + tel;
+      });
+      return "empresa\ttelefone\n" + body.join("\n");
+    }
+
+    function phoneDigits(phone) {
+      return phone.replace(/\D/g, "");
+    }
+
+    function isBrMobile(phone) {
+      const d = phoneDigits(phone);
+      if (d.length !== 11) return false;
+      return d.charAt(2) === "9";
+    }
+
+    function waLink(phone) {
+      const d = phoneDigits(phone);
+      if (d.length !== 11) return "";
+      return "https://wa.me/55" + d;
+    }
+
+    function fillWaTemplate(tpl, nome, phone) {
+      const wa = isBrMobile(phone) ? waLink(phone) : "—";
+      return tpl.split("{{nome}}").join(nome).split("{{telefone}}").join(phone || "—").split("{{wa}}").join(wa);
+    }
+
+    function analyzeMapsText(text) {
+      const blocks = splitMapsBlocks(text);
+      return blocks.map((raw) => {
+        const hasWebsite =
+          /\bWebsite\b/i.test(raw) ||
+          /\bAcesse o site\b/i.test(raw) ||
+          /\bhttp[s]?:\/\//i.test(raw);
+        const phones = extractPhones(raw);
+        const mobile = phones.find(isBrMobile) || "";
+        const empresa = empresaForMapBlock(raw, phones);
+        return {
+          empresa,
+          hasWebsite,
+          phones,
+          mobile,
+          wa: mobile ? waLink(mobile) : "",
+          raw,
+        };
+      });
+    }
+
+    function renderClientesTable(rows) {
+      mapsClientesBody.innerHTML = "";
+      if (!rows.length) {
+        mapsClientesWrap.hidden = true;
+        mapsClientesTitle.hidden = true;
+        return;
+      }
+      rows.forEach((r) => {
+        const tr = document.createElement("tr");
+        const tdNome = document.createElement("td");
+        tdNome.textContent = r.empresa;
+        const tdTel = document.createElement("td");
+        tdTel.textContent = r.phones.length ? r.phones.join("  ·  ") : "—";
+        tr.appendChild(tdNome);
+        tr.appendChild(tdTel);
+        mapsClientesBody.appendChild(tr);
+      });
+      mapsClientesWrap.hidden = false;
+      mapsClientesTitle.hidden = false;
+    }
+
+    function renderMapsTable(rows) {
+      mapsTableBody.innerHTML = "";
+      rows.forEach((r, i) => {
+        const tr = document.createElement("tr");
+        const siteCell = r.hasWebsite
+          ? '<span class="pill yes">com site</span>'
+          : '<span class="pill no">sem site</span>';
+        const phonesStr = r.phones.length ? r.phones.join(" · ") : "—";
+        const waCell = r.wa
+          ? '<a href="' +
+            r.wa +
+            '" target="_blank" rel="noopener noreferrer">wa.me</a>'
+          : '<span class="pill unk">sem móvel óbvio</span>';
+
+        const tpl = mapsWaTemplate.value;
+        const msg = fillWaTemplate(tpl, r.empresa, r.mobile || (r.phones[0] || ""));
+
+        const td1 = document.createElement("td");
+        td1.textContent = r.empresa;
+        const td2 = document.createElement("td");
+        td2.innerHTML = siteCell;
+        const td3 = document.createElement("td");
+        td3.textContent = phonesStr;
+        const td4 = document.createElement("td");
+        td4.innerHTML = waCell;
+        const td5 = document.createElement("td");
+        td5.className = "maps-actions";
+        const b1 = document.createElement("button");
+        b1.type = "button";
+        b1.className = "ghost";
+        b1.textContent = "Copiar msg";
+        b1.addEventListener("click", async () => {
+          try {
+            await navigator.clipboard.writeText(msg);
+            mapsStatus.textContent = "Mensagem copiada (linha " + (i + 1) + ").";
+          } catch {
+            mapsStatus.textContent = "Não foi possível copiar automaticamente.";
+          }
+        });
+        td5.appendChild(b1);
+        tr.appendChild(td1);
+        tr.appendChild(td2);
+        tr.appendChild(td3);
+        tr.appendChild(td4);
+        tr.appendChild(td5);
+        mapsTableBody.appendChild(tr);
+      });
+      mapsTableWrap.hidden = rows.length === 0;
+      mapsDetailHint.hidden = rows.length === 0;
+    }
+
+    mapsPaste.addEventListener("input", scheduleSave);
+    mapsWaTemplate.addEventListener("input", scheduleSave);
+
+    function runMapsAnalysis(opts) {
+      const restored = opts && opts.restored;
+      const text = mapsPaste.value.trim();
+      if (!text) {
+        mapsStatus.textContent = "Cole o texto dos resultados primeiro.";
+        mapsSummary.textContent = "";
+        mapsTableWrap.hidden = true;
+        mapsDetailHint.hidden = true;
+        mapsClientesWrap.hidden = true;
+        mapsClientesTitle.hidden = true;
+        mapsClientesBody.innerHTML = "";
+        lastMapsRows = [];
+        lastMapsTsv = "";
+        mapsTsvPreview.textContent = "Analise a colagem acima para gerar a lista.";
+        try {
+          localStorage.removeItem(STORAGE.mapsClientesTsv);
+        } catch (_) {}
+        return;
+      }
+      lastMapsRows = analyzeMapsText(text);
+      lastMapsTsv = buildEmpresaTelefoneTsv(lastMapsRows);
+      persistMapsClientesTsv(lastMapsTsv);
+      mapsTsvPreview.textContent = lastMapsTsv;
+      const com = lastMapsRows.filter((r) => r.hasWebsite).length;
+      const sem = lastMapsRows.length - com;
+      const comMobSemSite = lastMapsRows.filter((r) => !r.hasWebsite && r.wa).length;
+      mapsSummary.textContent =
+        "Blocos encontrados: " +
+        lastMapsRows.length +
+        " · Com indicação de site: " +
+        com +
+        " · Sem site (no texto): " +
+        sem +
+        " · Sem site e com celular (9): " +
+        comMobSemSite;
+      renderClientesTable(lastMapsRows);
+      renderMapsTable(lastMapsRows);
+      mapsStatus.textContent = restored
+        ? "Lista de clientes restaurada (memória do browser)."
+        : "Análise feita só sobre o texto colado. Lista guardada neste site.";
+      scheduleSave();
+    }
+
+    mapsAnalyzeBtn.addEventListener("click", () => runMapsAnalysis({ restored: false }));
+
+    mapsExportNoSiteBtn.addEventListener("click", async () => {
+      if (!lastMapsRows.length) {
+        mapsStatus.textContent = "Clique em “Analisar colagem” antes.";
+        return;
+      }
+      const lines = ["empresa", "tem_site", "telefones", "whatsapp_url"];
+      lastMapsRows.forEach((r) => {
+        if (r.hasWebsite) return;
+        const esc = (s) => '"' + String(s).replace(/"/g, '""') + '"';
+        lines.push(
+          [esc(r.empresa), "nao", esc(r.phones.join("; ")), esc(r.wa || "")].join(",")
+        );
+      });
+      const csv = lines.join("\n");
+      try {
+        await navigator.clipboard.writeText(csv);
+        mapsStatus.textContent = "CSV (sem site) copiado. Cole no Excel/Sheets.";
+      } catch {
+        mapsStatus.textContent = "Falha ao copiar CSV.";
+      }
+    });
+
+    mapsCopyTsvBtn.addEventListener("click", async () => {
+      if (!lastMapsTsv) {
+        mapsStatus.textContent = "Clique em “Analisar colagem” antes.";
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(lastMapsTsv);
+        mapsStatus.textContent = "TSV (empresa + telefone) copiado.";
+      } catch {
+        mapsStatus.textContent = "Não foi possível copiar o TSV.";
+      }
+    });
+
+    mapsDownloadTsvBtn.addEventListener("click", () => {
+      if (!lastMapsTsv) {
+        mapsStatus.textContent = "Clique em “Analisar colagem” antes.";
+        return;
+      }
+      const blob = new Blob([lastMapsTsv], { type: "text/tab-separated-values;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "clientes.tsv";
+      a.click();
+      URL.revokeObjectURL(url);
+      mapsStatus.textContent = "Ficheiro clientes.tsv descarregado.";
+    });
+
+    function applyRowsFromCloudMaps(rows) {
+      lastMapsRows = (rows || []).map((r) => {
+        const phones = r.phones || [];
+        const mobile = phones.find(isBrMobile) || "";
+        return {
+          empresa: r.empresa,
+          hasWebsite: false,
+          phones,
+          mobile,
+          wa: mobile ? waLink(mobile) : "",
+          raw: "",
+        };
+      });
+      lastMapsTsv = buildEmpresaTelefoneTsv(lastMapsRows);
+      persistMapsClientesTsv(lastMapsTsv);
+      mapsTsvPreview.textContent = lastMapsTsv;
+      const com = lastMapsRows.filter((r) => r.hasWebsite).length;
+      const sem = lastMapsRows.length - com;
+      const comMobSemSite = lastMapsRows.filter((r) => !r.hasWebsite && r.wa).length;
+      mapsSummary.textContent =
+        "Lista da nuvem: " +
+        lastMapsRows.length +
+        " linhas · Com site (texto): " +
+        com +
+        " · Sem site: " +
+        sem +
+        " · Sem site e com celular (9): " +
+        comMobSemSite;
+      renderClientesTable(lastMapsRows);
+      renderMapsTable(lastMapsRows);
+      mapsStatus.textContent = "Dados aplicados a partir do Supabase.";
+      scheduleSave();
+    }
+
+    window.__mapClientesBridgeMaps = {
+      getRows: () => lastMapsRows.map((r) => ({ empresa: r.empresa, phones: r.phones.slice() })),
+      applyRowsFromCloud: applyRowsFromCloudMaps,
+    };
+
+    loadSaved();
+    renderList();
+    updatePreview();
+    if (mapsPaste.value.trim()) {
+      runMapsAnalysis({ restored: true });
+    }
+  </script>
+  <script type="module">
+    import { bindSupabaseMapClientes } from "./js/supabase-sync.js";
+    const root = document.getElementById("sbCloudPanelIndex");
+    const cloudMsg = document.getElementById("cloudSbMsgIndex");
+    await bindSupabaseMapClientes({
+      url: window.SUPABASE_URL,
+      key: window.SUPABASE_ANON_KEY,
+      rootEl: root,
+      getRows: () => window.__mapClientesBridgeMaps.getRows(),
+      applyRows: (rows) => window.__mapClientesBridgeMaps.applyRowsFromCloud(rows),
+      setCloudMsg: (m) => {
+        if (cloudMsg) cloudMsg.textContent = m;
+      },
+    });
+  </script>
+</body>
+</html>

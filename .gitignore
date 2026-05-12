@@ -1,0 +1,17 @@
+# Dados locais / listas (não enviar para repositório público)
+colagem.txt
+clientes.tsv
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Ambiente / segredos
+.env
+.env.local
+.env.*.local
+
+# Editor
+.cursor/
