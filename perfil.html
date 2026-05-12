@@ -22,7 +22,7 @@
       color: var(--ink);
       line-height: 1.5;
       padding: 1.25rem clamp(1rem, 4vw, 2rem) 2rem;
-      max-width: 1100px;
+      max-width: min(1200px, 100%);
       margin: 0 auto;
     }
     h1 { font-size: clamp(1.4rem, 4vw, 2rem); margin-bottom: 0.35rem; }
@@ -78,17 +78,64 @@
     .mini button { font-size: 0.75rem; padding: 0.3rem 0.45rem; box-shadow: 2px 2px 0 var(--ink); }
     .msg { font-size: 0.85rem; font-weight: 600; margin-top: 0.5rem; min-height: 1.2rem; }
     #appPanel[hidden], #loginPanel[hidden] { display: none !important; }
-    th.abord-col, td.abord-col {
-      min-width: 10rem;
-      max-width: min(28rem, 48vw);
+    .filter-cat {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.45rem 1rem;
+      margin-top: 0.55rem;
     }
-    .abord-snippet {
-      flex: 1 1 0;
-      min-width: min(100%, 7rem);
-      font-size: 0.76rem;
-      line-height: 1.4;
-      max-height: 5.2em;
-      overflow: hidden;
+    .filter-cat-label {
+      font-weight: 800;
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .filter-cat label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      text-transform: none;
+      font-weight: 600;
+      font-size: 0.82rem;
+      margin: 0;
+      cursor: pointer;
+    }
+    .nome-com-pill {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 0.25rem 0.45rem;
+    }
+    .pill-cat {
+      font-size: 0.62rem;
+      font-weight: 800;
+      padding: 0.1rem 0.35rem;
+      border: 2px solid var(--ink);
+      white-space: nowrap;
+    }
+    .pill-cat.estetica { background: var(--ok); }
+    .pill-cat.comercio { background: var(--pend); }
+    .pill-cat.outros { background: #e8e8e8; }
+    th.abord-col, td.abord-col {
+      min-width: 14rem;
+      max-width: none;
+      width: 42%;
+    }
+    .abord-row-actions.perfil-abord {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.45rem;
+    }
+    .abord-snippet.abord-full {
+      flex: none;
+      width: 100%;
+      min-width: 0;
+      max-height: none;
+      overflow: visible;
+      white-space: pre-wrap;
+      font-size: 0.8rem;
+      line-height: 1.48;
       word-break: break-word;
     }
     .abord-row-actions {
@@ -115,7 +162,7 @@
   <p class="sub">
     Entra com <strong>email e senha</strong> do utilizador que criaste no Supabase (<strong>Authentication</strong> → Users), ou com <strong>link mágico</strong>.
     Na nuvem: <strong>um cliente por nome</strong>. <strong>Não contactado</strong> vs <strong>Já contactei</strong>.
-    A coluna <strong>Abordagem</strong> usa a mesma lógica que em <a href="clientes.html">Meus clientes</a> (e, se existir, o texto que guardaste lá na lista local).
+    Filtra também por <strong>categoria</strong> (igual a Meus clientes). A coluna <strong>Abordagem</strong> mostra o <strong>texto completo</strong> (mesma lógica que em <a href="clientes.html">Meus clientes</a> e lista local guardada).
   </p>
 
   <div class="panel" id="loginPanel">
@@ -141,6 +188,13 @@
     <label for="filterQ" style="margin-top: 0.75rem">Filtrar</label>
     <input type="search" id="filterQ" placeholder="Nome, telefone ou trecho da abordagem…" autocomplete="off" />
     <label style="margin-top: 0.5rem; text-transform: none"><input type="checkbox" id="filterSóPend" /> Mostrar só ainda não contactados</label>
+    <div class="filter-cat" role="radiogroup" aria-label="Categoria do cliente">
+      <span class="filter-cat-label">Categoria</span>
+      <label><input type="radio" name="perfilCat" value="todos" checked /> Todos</label>
+      <label><input type="radio" name="perfilCat" value="estetica" /> Estética automotiva</label>
+      <label><input type="radio" name="perfilCat" value="comercio" /> Comércio</label>
+      <label><input type="radio" name="perfilCat" value="outros" /> Outros</label>
+    </div>
     <p class="msg" id="appMsg" aria-live="polite"></p>
   </div>
 
@@ -182,6 +236,31 @@
 
     const KEY_TSV = "instaTool_mapsClientesTsv";
     const KEY_ABORD = "clientesPage_listaAbordagem";
+    const KEY_FILTRO_CAT = "perfilPage_filtroCategoria";
+
+    function getCategoriaFiltroUI() {
+      const el = document.querySelector('input[name="perfilCat"]:checked');
+      return el ? el.value : "todos";
+    }
+
+    function loadPerfilCatFiltro() {
+      try {
+        const v = localStorage.getItem(KEY_FILTRO_CAT);
+        if (v === "estetica" || v === "comercio" || v === "outros" || v === "todos") {
+          document.querySelectorAll('input[name="perfilCat"]').forEach((inp) => {
+            inp.checked = inp.value === v;
+          });
+        }
+      } catch (_) {}
+    }
+
+    function persistPerfilCatFiltro() {
+      try {
+        localStorage.setItem(KEY_FILTRO_CAT, getCategoriaFiltroUI());
+      } catch (_) {}
+    }
+
+    loadPerfilCatFiltro();
 
     function getListaAbordagemLocal() {
       try {
@@ -281,8 +360,16 @@
     function render() {
       const q = (filterQ.value || "").trim().toLowerCase();
       const sóPend = filterSóPend.checked;
+      const catF = getCategoriaFiltroUI();
+      const filtroCat =
+        typeof window !== "undefined" && typeof window.filtroCategoriaCliente === "function"
+          ? window.filtroCategoriaCliente
+          : null;
       let list = sortRows(rowsCache);
       if (sóPend) list = list.filter((r) => !r.contatado_em);
+      if (catF !== "todos" && filtroCat) {
+        list = list.filter((r) => filtroCat(r.empresa) === catF);
+      }
       if (q) {
         list = list.filter((r) => {
           const t = (r.telefone || "").toLowerCase();
@@ -292,7 +379,21 @@
       }
       tbody.innerHTML = "";
       if (!list.length) {
-        tableWrap.hidden = rowsCache.length === 0;
+        if (!rowsCache.length) {
+          tableWrap.hidden = true;
+          return;
+        }
+        tableWrap.hidden = false;
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 5;
+        td.style.fontWeight = "700";
+        td.style.opacity = "0.88";
+        td.style.padding = "0.85rem 0.55rem";
+        td.textContent =
+          "Nenhum cliente nesta combinação de filtros. Experimenta «Todos» na categoria ou limpa a pesquisa.";
+        tr.appendChild(td);
+        tbody.appendChild(tr);
         return;
       }
       tableWrap.hidden = false;
@@ -315,21 +416,29 @@
         }
         const td1 = document.createElement("td");
         td1.style.fontWeight = "700";
-        td1.textContent = r.empresa;
+        const nomeWrap = document.createElement("div");
+        nomeWrap.className = "nome-com-pill";
+        const spNome = document.createElement("span");
+        spNome.textContent = r.empresa;
+        nomeWrap.appendChild(spNome);
+        if (filtroCat) {
+          const c = filtroCat(r.empresa);
+          const pc = document.createElement("span");
+          pc.className = "pill-cat " + c;
+          pc.textContent = c === "estetica" ? "Estética" : c === "comercio" ? "Comércio" : "Outros";
+          nomeWrap.appendChild(pc);
+        }
+        td1.appendChild(nomeWrap);
         const fullAb = textoAbordagemParaPerfil(r.empresa);
         const tdAb = document.createElement("td");
         tdAb.className = "abord-col";
         const abWrap = document.createElement("div");
-        abWrap.className = "abord-row-actions";
-        const snip = document.createElement("div");
-        snip.className = "abord-snippet";
-        snip.textContent = fullAb.trim() ? fullAb : "—";
-        snip.title = fullAb.trim() ? fullAb : "";
+        abWrap.className = "abord-row-actions perfil-abord";
         const copyAb = document.createElement("button");
         copyAb.type = "button";
         copyAb.className = "icon-copy secondary";
         copyAb.setAttribute("aria-label", "Copiar texto de abordagem");
-        copyAb.title = "Copiar";
+        copyAb.title = "Copiar texto completo";
         copyAb.innerHTML = "&#128203;";
         copyAb.addEventListener("click", async () => {
           if (!fullAb.trim()) return;
@@ -340,8 +449,11 @@
             appMsg.textContent = "Não foi possível copiar (HTTPS ou localhost).";
           }
         });
-        abWrap.appendChild(snip);
+        const snip = document.createElement("div");
+        snip.className = "abord-snippet abord-full";
+        snip.textContent = fullAb.trim() ? fullAb : "—";
         abWrap.appendChild(copyAb);
+        abWrap.appendChild(snip);
         tdAb.appendChild(abWrap);
         const td2 = document.createElement("td");
         td2.style.whiteSpace = "pre-wrap";
@@ -506,6 +618,12 @@
     btnReload.addEventListener("click", () => loadRows());
     filterQ.addEventListener("input", () => render());
     filterSóPend.addEventListener("change", () => render());
+    document.querySelectorAll('input[name="perfilCat"]').forEach((inp) => {
+      inp.addEventListener("change", () => {
+        persistPerfilCatFiltro();
+        render();
+      });
+    });
 
     btnImportTsv.addEventListener("click", async () => {
       let raw = "";
