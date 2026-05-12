@@ -1,9 +1,13 @@
 /**
  * Frases de abordagem distintas por cliente (hash + segmento).
  * Nome fixo: Alessandro Silva Cardoso — sites e softwares (@alessandrosilvaxz_ no Instagram).
+ * O segundo argumento (rowIndex) é opcional: se omitido, usa hash do nome para a frase ser
+ * estável na tabela e igual à que fica guardada após «Guardar».
  */
 const VENDEDOR = "Alessandro Silva Cardoso";
 const VENDEDOR_INSTAGRAM = "@alessandrosilvaxz_";
+/** Site de referência (estética automotiva) — incluído nas mensagens desse segmento. */
+const SITE_PORTFOLIO_ESTETICA_AUTO = "https://estetica-auto-xi.vercel.app/";
 
 function hashStr(s) {
   let h = 0;
@@ -13,6 +17,13 @@ function hashStr(s) {
 
 function segmento(empresa) {
   const e = String(empresa || "").toLowerCase();
+  if (
+    /estética automotiva|estetica automotiva|detailing|vitrificação|vitrificacao|vitrifica|polimento automot|polimento de car|cerâmica automot|ceramica automot|nano.?ceramic|coating|ppf|paint protection|envelopamento|auto spa|car care|estética auto\b|estetica auto\b|funilaria estét|funilaria estet|higieniza.*(carro|interior)|lavagem.*(premium|detalh)/i.test(
+      e
+    )
+  ) {
+    return "estetica_auto";
+  }
   if (/posto|combust|gasolina|diesel|abastec/i.test(e)) return "posto";
   if (/farmácia|farmacia|drogaria|medicament|perfum/i.test(e)) return "farmacia";
   if (/restaurante|lanchonete|pizz|bar |acougue|açougue|padaria/i.test(e)) return "food";
@@ -25,15 +36,48 @@ function segmento(empresa) {
   return "geral";
 }
 
+/**
+ * Categoria grossa para filtros na UI (alinhado ao segmento interno).
+ * @param {string} empresa
+ * @returns {"estetica"|"comercio"|"outros"}
+ */
+function filtroCategoriaCliente(empresa) {
+  const s = segmento(empresa);
+  if (s === "estetica_auto") return "estetica";
+  if (s === "comercio") return "comercio";
+  return "outros";
+}
+
+/**
+ * @param {{ empresa: string }[]} rows
+ * @returns {{ estetica: number, comercio: number, outros: number }}
+ */
+function contarClientesPorCategoria(rows) {
+  const o = { estetica: 0, comercio: 0, outros: 0 };
+  if (!rows || !rows.length) return o;
+  for (const r of rows) {
+    const c = filtroCategoriaCliente(r.empresa);
+    if (c === "estetica") o.estetica++;
+    else if (c === "comercio") o.comercio++;
+    else o.outros++;
+  }
+  return o;
+}
+
 function pick(arr, seed) {
   return arr[seed % arr.length];
 }
 
-/** @param {string} empresa @param {number} rowIndex */
+/**
+ * @param {string} empresa
+ * @param {number} [rowIndex] — salt para variar; omitir = estável por nome (recomendado na UI).
+ */
 function gerarFraseAbordagem(empresa, rowIndex) {
   const nome = String(empresa || "a empresa").trim();
   const seg = segmento(nome);
-  const h = hashStr(nome) + rowIndex * 17 + seg.length * 31;
+  const idx =
+    typeof rowIndex === "number" && Number.isFinite(rowIndex) ? rowIndex : hashStr(nome.toLowerCase());
+  const h = hashStr(nome) + idx * 17 + seg.length * 31;
   const intro = `Olá, meu nome é ${VENDEDOR} (${VENDEDOR_INSTAGRAM} no Instagram), desenvolvo sites e softwares.`;
 
   const doresGeral = [
@@ -46,6 +90,14 @@ function gerarFraseAbordagem(empresa, rowIndex) {
     `Se hoje a equipa da ${nome} faz follow-up manual ou planilhas “no improviso”, dá para ganhar horas com automações simples. Tem interesse em explorar isso?`,
     `Clientes do ramo da ${nome} costumam dizer que o gargalo é aparecer bem no Maps e depois converter a visita em mensagem. Posso mostrar exemplos — combinamos uma chamada curta?`,
     `Para a ${nome}, um site não é “só cartão”: é vitrine 24h, confiança e menos dependência de algoritmos. Gostaria de saber se não tem interesse num diagnóstico gratuito?`,
+  ];
+
+  const doresEsteticaAuto = [
+    `A ${nome} vende confiança e resultado visual: um site com antes/depois, pacotes (polimento, vitrificação, PPF) e botão direto para WhatsApp costuma encher agenda. Posso sugerir um esboço inspirado no que já fiz em ${SITE_PORTFOLIO_ESTETICA_AUTO}?`,
+    `Quem procura estética automotiva compara no telefone de madrugada; se a ${nome} aparecer com fotos nítidas, horário e local no Maps bem amarrados, reduz dúvida. Vale uma conversa curta? O tipo de página que monto está exemplificado em ${SITE_PORTFOLIO_ESTETICA_AUTO}.`,
+    `Para a ${nome}, repetir preço e serviço só no Instagram cansa; um site próprio (portfólio + depoimentos + agendar) dá credibilidade. Quer ver referência? ${SITE_PORTFOLIO_ESTETICA_AUTO} é um projeto meu nesse ramo — combinamos 10 minutos?`,
+    `Se a ${nome} quer mais orçamentos qualificados, um fluxo simples (serviços → galeria → WhatsApp) costuma funcionar melhor que só DM. Tenho caso parecido em ${SITE_PORTFOLIO_ESTETICA_AUTO}; faz sentido falarmos sem compromisso?`,
+    `A impressão da ${nome} no digital precisa ser tão caprichada quanto o carro na saída do box; posso ajudar a traduzir isso num site rápido e bonito no telemóvel. Referência: ${SITE_PORTFOLIO_ESTETICA_AUTO}. Topa ouvir uma ideia?`,
   ];
 
   const doresComercio = [
@@ -92,6 +144,7 @@ function gerarFraseAbordagem(empresa, rowIndex) {
 
   const pools = {
     geral: doresGeral,
+    estetica_auto: doresEsteticaAuto.concat(doresGeral),
     comercio: doresComercio.concat(doresGeral),
     industria: doresIndustria.concat(doresGeral),
     tech: doresTech.concat(doresGeral),
@@ -105,5 +158,9 @@ function gerarFraseAbordagem(empresa, rowIndex) {
 
   const pool = pools[seg] || pools.geral;
   const corpo = pick(pool, h);
-  return intro + " " + corpo;
+  let out = intro + " " + corpo;
+  if (seg === "estetica_auto" && !out.includes("estetica-auto-xi.vercel.app")) {
+    out += " Referência: " + SITE_PORTFOLIO_ESTETICA_AUTO;
+  }
+  return out;
 }

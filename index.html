@@ -197,6 +197,28 @@
     .maps-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.25rem; }
     .maps-table--clientes td:first-child { font-weight: 700; min-width: 12rem; }
     .maps-table--clientes td:last-child { white-space: pre-wrap; }
+    .maps-filter-cat {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem 1rem;
+      margin: 0.65rem 0 0.35rem;
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+    .maps-filter-cat-label { text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.72rem; }
+    .maps-filter-cat label { display: inline-flex; align-items: center; gap: 0.25rem; font-weight: 600; cursor: pointer; }
+    .maps-nome-pill { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 0.45rem; }
+    .maps-pill-cat {
+      font-size: 0.62rem;
+      font-weight: 800;
+      padding: 0.12rem 0.35rem;
+      border: 2px solid var(--ink);
+      white-space: nowrap;
+    }
+    .maps-pill-cat.estetica { background: #c8e6c9; }
+    .maps-pill-cat.comercio { background: #fff9c4; }
+    .maps-pill-cat.outros { background: #e8e8e8; }
     .maps-clientes-title {
       font-size: 1.15rem;
       margin: 1rem 0 0.5rem;
@@ -221,6 +243,7 @@
     .cloud-row > button { flex: 0 0 auto; align-self: center; }
   </style>
   <script src="supabase-config.js"></script>
+  <script src="js/abordagem-frases.js"></script>
 </head>
 <body>
   <p style="margin-bottom: 0.75rem; font-size: 0.9rem"><a href="clientes.html" style="font-weight: 800; color: var(--ink)">→ Só tabela: clientes e números</a> · <a href="perfil.html" style="font-weight: 800; color: var(--ink)">Meu perfil (login)</a></p>
@@ -310,6 +333,13 @@
       <p class="cloud-msg" id="cloudSbMsgIndex" aria-live="polite"></p>
     </div>
     <p class="meta" id="mapsSummary" aria-live="polite"></p>
+    <div class="maps-filter-cat" id="mapsFilterCatWrap" hidden role="radiogroup" aria-label="Categoria do cliente">
+      <span class="maps-filter-cat-label">Categoria</span>
+      <label><input type="radio" name="mapsCatFiltro" value="todos" checked /> Todos</label>
+      <label><input type="radio" name="mapsCatFiltro" value="estetica" /> Estética automotiva</label>
+      <label><input type="radio" name="mapsCatFiltro" value="comercio" /> Comércio</label>
+      <label><input type="radio" name="mapsCatFiltro" value="outros" /> Outros</label>
+    </div>
 
     <h3 class="maps-clientes-title" id="mapsClientesTitle" hidden>Tabela — clientes e telefones</h3>
     <div class="maps-wrap maps-simple-wrap" id="mapsClientesWrap" hidden>
@@ -395,6 +425,7 @@ parceiro_som
       mapsPaste: "instaTool_mapsPaste",
       mapsWaTemplate: "instaTool_mapsWaTemplate",
       mapsClientesTsv: "instaTool_mapsClientesTsv",
+      mapsCatFiltro: "instaTool_mapsCatFiltro",
     };
 
     /** Teu @ no Instagram — substituído onde o modelo tiver {{meuig}} (DM e WhatsApp). */
@@ -646,9 +677,87 @@ parceiro_som
     const mapsClientesTitle = document.getElementById("mapsClientesTitle");
     const mapsClientesBody = document.getElementById("mapsClientesBody");
     const mapsDetailHint = document.getElementById("mapsDetailHint");
+    const mapsFilterCatWrap = document.getElementById("mapsFilterCatWrap");
 
     let lastMapsRows = [];
     let lastMapsTsv = "";
+    let mapsCatFiltro = "todos";
+
+    function syncMapsCatRadios() {
+      document.querySelectorAll('input[name="mapsCatFiltro"]').forEach((inp) => {
+        inp.checked = inp.value === mapsCatFiltro;
+      });
+    }
+
+    function loadMapsCatFiltroFromStorage() {
+      try {
+        const v = localStorage.getItem(STORAGE.mapsCatFiltro);
+        if (v === "estetica" || v === "comercio" || v === "outros" || v === "todos") mapsCatFiltro = v;
+      } catch (_) {}
+      syncMapsCatRadios();
+    }
+
+    function persistMapsCatFiltro() {
+      try {
+        localStorage.setItem(STORAGE.mapsCatFiltro, mapsCatFiltro);
+      } catch (_) {}
+    }
+
+    function getMapsRowsFiltrados() {
+      if (!lastMapsRows.length) return [];
+      if (mapsCatFiltro === "todos" || typeof filtroCategoriaCliente !== "function") return lastMapsRows.slice();
+      return lastMapsRows.filter((r) => filtroCategoriaCliente(r.empresa) === mapsCatFiltro);
+    }
+
+    function appendNomeComPill(td, empresa) {
+      td.textContent = "";
+      const wrap = document.createElement("div");
+      wrap.className = "maps-nome-pill";
+      const sp = document.createElement("span");
+      sp.textContent = empresa;
+      wrap.appendChild(sp);
+      if (typeof filtroCategoriaCliente === "function") {
+        const cat = filtroCategoriaCliente(empresa);
+        const pill = document.createElement("span");
+        pill.className = "maps-pill-cat " + cat;
+        pill.textContent = cat === "estetica" ? "Estética" : cat === "comercio" ? "Comércio" : "Outros";
+        wrap.appendChild(pill);
+      }
+      td.appendChild(wrap);
+    }
+
+    function aplicarVistasMaps() {
+      if (mapsFilterCatWrap) mapsFilterCatWrap.hidden = !lastMapsRows.length;
+      const view = getMapsRowsFiltrados();
+      lastMapsTsv = buildEmpresaTelefoneTsv(view);
+      persistMapsClientesTsv(lastMapsTsv);
+      mapsTsvPreview.textContent = lastMapsTsv;
+      const com = view.filter((r) => r.hasWebsite).length;
+      const sem = view.length - com;
+      const comMobSemSite = view.filter((r) => !r.hasWebsite && r.wa).length;
+      const cnt =
+        typeof contarClientesPorCategoria === "function"
+          ? contarClientesPorCategoria(lastMapsRows)
+          : { estetica: 0, comercio: 0, outros: 0 };
+      mapsSummary.textContent =
+        (mapsCatFiltro !== "todos" ? "Visíveis: " + view.length + " de " + lastMapsRows.length + " · " : "") +
+        "Blocos: " +
+        lastMapsRows.length +
+        " (estética " +
+        cnt.estetica +
+        ", comércio " +
+        cnt.comercio +
+        ", outros " +
+        cnt.outros +
+        ") · Com site (texto): " +
+        com +
+        " · Sem site: " +
+        sem +
+        " · Sem site e com celular (9): " +
+        comMobSemSite;
+      renderClientesTable(view);
+      renderMapsTable(view);
+    }
 
     function extractPhones(block) {
       const re = /\(\d{2}\)\s*[\d\s-]{8,22}/g;
@@ -883,27 +992,43 @@ parceiro_som
 
     function renderClientesTable(rows) {
       mapsClientesBody.innerHTML = "";
-      if (!rows.length) {
+      if (!lastMapsRows.length) {
         mapsClientesWrap.hidden = true;
         mapsClientesTitle.hidden = true;
+        return;
+      }
+      mapsClientesWrap.hidden = false;
+      mapsClientesTitle.hidden = false;
+      if (!rows.length) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 2;
+        td.style.fontWeight = "700";
+        td.style.opacity = "0.88";
+        td.textContent = "Nenhum cliente nesta categoria. Escolhe «Todos» ou outra.";
+        tr.appendChild(td);
+        mapsClientesBody.appendChild(tr);
         return;
       }
       rows.forEach((r) => {
         const tr = document.createElement("tr");
         const tdNome = document.createElement("td");
-        tdNome.textContent = r.empresa;
+        appendNomeComPill(tdNome, r.empresa);
         const tdTel = document.createElement("td");
         tdTel.textContent = r.phones.length ? r.phones.join("  ·  ") : "—";
         tr.appendChild(tdNome);
         tr.appendChild(tdTel);
         mapsClientesBody.appendChild(tr);
       });
-      mapsClientesWrap.hidden = false;
-      mapsClientesTitle.hidden = false;
     }
 
     function renderMapsTable(rows) {
       mapsTableBody.innerHTML = "";
+      if (!rows.length) {
+        mapsTableWrap.hidden = true;
+        mapsDetailHint.hidden = true;
+        return;
+      }
       rows.forEach((r, i) => {
         const tr = document.createElement("tr");
         const siteCell = r.hasWebsite
@@ -920,7 +1045,7 @@ parceiro_som
         const msg = fillWaTemplate(tpl, r.empresa, r.mobile || (r.phones[0] || ""));
 
         const td1 = document.createElement("td");
-        td1.textContent = r.empresa;
+        appendNomeComPill(td1, r.empresa);
         const td2 = document.createElement("td");
         td2.innerHTML = siteCell;
         const td3 = document.createElement("td");
@@ -949,8 +1074,8 @@ parceiro_som
         tr.appendChild(td5);
         mapsTableBody.appendChild(tr);
       });
-      mapsTableWrap.hidden = rows.length === 0;
-      mapsDetailHint.hidden = rows.length === 0;
+      mapsTableWrap.hidden = false;
+      mapsDetailHint.hidden = false;
     }
 
     mapsPaste.addEventListener("input", scheduleSave);
@@ -966,6 +1091,7 @@ parceiro_som
         mapsDetailHint.hidden = true;
         mapsClientesWrap.hidden = true;
         mapsClientesTitle.hidden = true;
+        if (mapsFilterCatWrap) mapsFilterCatWrap.hidden = true;
         mapsClientesBody.innerHTML = "";
         lastMapsRows = [];
         lastMapsTsv = "";
@@ -976,23 +1102,7 @@ parceiro_som
         return;
       }
       lastMapsRows = analyzeMapsText(text);
-      lastMapsTsv = buildEmpresaTelefoneTsv(lastMapsRows);
-      persistMapsClientesTsv(lastMapsTsv);
-      mapsTsvPreview.textContent = lastMapsTsv;
-      const com = lastMapsRows.filter((r) => r.hasWebsite).length;
-      const sem = lastMapsRows.length - com;
-      const comMobSemSite = lastMapsRows.filter((r) => !r.hasWebsite && r.wa).length;
-      mapsSummary.textContent =
-        "Blocos encontrados: " +
-        lastMapsRows.length +
-        " · Com indicação de site: " +
-        com +
-        " · Sem site (no texto): " +
-        sem +
-        " · Sem site e com celular (9): " +
-        comMobSemSite;
-      renderClientesTable(lastMapsRows);
-      renderMapsTable(lastMapsRows);
+      aplicarVistasMaps();
       mapsStatus.textContent = restored
         ? "Lista de clientes restaurada (memória do browser)."
         : "Análise feita só sobre o texto colado. Lista guardada neste site.";
@@ -1007,7 +1117,7 @@ parceiro_som
         return;
       }
       const lines = ["empresa", "tem_site", "telefones", "whatsapp_url"];
-      lastMapsRows.forEach((r) => {
+      getMapsRowsFiltrados().forEach((r) => {
         if (r.hasWebsite) return;
         const esc = (s) => '"' + String(s).replace(/"/g, '""') + '"';
         lines.push(
@@ -1064,33 +1174,32 @@ parceiro_som
           raw: "",
         };
       });
-      lastMapsTsv = buildEmpresaTelefoneTsv(lastMapsRows);
-      persistMapsClientesTsv(lastMapsTsv);
-      mapsTsvPreview.textContent = lastMapsTsv;
-      const com = lastMapsRows.filter((r) => r.hasWebsite).length;
-      const sem = lastMapsRows.length - com;
-      const comMobSemSite = lastMapsRows.filter((r) => !r.hasWebsite && r.wa).length;
-      mapsSummary.textContent =
-        "Lista da nuvem: " +
-        lastMapsRows.length +
-        " linhas · Com site (texto): " +
-        com +
-        " · Sem site: " +
-        sem +
-        " · Sem site e com celular (9): " +
-        comMobSemSite;
-      renderClientesTable(lastMapsRows);
-      renderMapsTable(lastMapsRows);
+      aplicarVistasMaps();
       mapsStatus.textContent = "Dados aplicados a partir do Supabase.";
       scheduleSave();
     }
 
     window.__mapClientesBridgeMaps = {
-      getRows: () => lastMapsRows.map((r) => ({ empresa: r.empresa, phones: r.phones.slice() })),
+      getRows: () =>
+        getMapsRowsFiltrados().map((r) => ({
+          empresa: r.empresa,
+          phones: r.phones.slice(),
+        })),
       applyRowsFromCloud: applyRowsFromCloudMaps,
     };
 
+    document.querySelectorAll('input[name="mapsCatFiltro"]').forEach((inp) => {
+      inp.addEventListener("change", () => {
+        if (!inp.checked) return;
+        mapsCatFiltro = inp.value;
+        persistMapsCatFiltro();
+        if (lastMapsRows.length) aplicarVistasMaps();
+        scheduleSave();
+      });
+    });
+
     loadSaved();
+    loadMapsCatFiltroFromStorage();
     renderList();
     updatePreview();
     if (mapsPaste.value.trim()) {
