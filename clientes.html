@@ -76,13 +76,14 @@
       min-width: 11rem;
       max-width: min(32rem, 52vw);
     }
+    /* Evita largura 0: -webkit-box + flex às vezes esconde o texto todo */
     .abord-snippet {
+      flex: 1 1 0;
+      min-width: min(100%, 8rem);
       font-size: 0.78rem;
       line-height: 1.42;
       color: #1a1a1a;
-      display: -webkit-box;
-      -webkit-line-clamp: 3;
-      -webkit-box-orient: vertical;
+      max-height: 5.2em;
       overflow: hidden;
       word-break: break-word;
     }
@@ -170,6 +171,11 @@
 <body>
   <p class="sub"><a href="index.html">← Ferramenta completa (Instagram + Maps)</a> · <a href="perfil.html">Meu perfil</a> (login — quem já chamei)</p>
   <h1>Meus clientes</h1>
+  <p class="panel" id="frasesErro" hidden style="background: #ffcdd2; margin-bottom: 1rem">
+    O ficheiro <code>js/abordagem-frases.js</code> não carregou — sem ele a coluna «Abordagem» fica vazia. Usa
+    <strong>rodar.bat</strong> / servidor local na pasta do projeto, ou confirma no deploy (Vercel) que a pasta
+    <code>js</code> foi enviada com o site.
+  </p>
   <p class="sub">A lista fica <strong>guardada neste browser</strong> depois de analisares (memória local do site). Com <strong>rodar.bat</strong> também podes carregar <code>clientes.tsv</code> / <code>colagem.txt</code> da pasta. Opcional: <strong>Supabase</strong> para a mesma lista noutro PC. A coluna <strong>Abordagem</strong> usa <code>gerarFraseAbordagem</code> (segmento pelo nome da empresa + hash estável); negócios de <strong>estética automotiva</strong> recebem o link do portfólio <a href="https://estetica-auto-xi.vercel.app/" target="_blank" rel="noopener">estetica-auto-xi.vercel.app</a>. <strong>Guardar</strong> grava a mesma frase na lista em baixo.</p>
 
   <div class="panel" id="sbCloudPanel">
@@ -324,13 +330,18 @@
 
     loadCatFiltroFromStorage();
 
+    if (typeof gerarFraseAbordagem !== "function") {
+      const fe = document.getElementById("frasesErro");
+      if (fe) fe.hidden = false;
+    }
+
     /** Texto mostrado/copiado: se já guardaste, usa a lista; senão gera na hora (mesma lógica que «Guardar»). */
     function textoAbordagemParaRow(r) {
       const key = (r.empresa || "").trim().toLowerCase();
       const hit = savedAbordagem.find((x) => (x.empresa || "").trim().toLowerCase() === key);
       if (hit && hit.abordagem) return hit.abordagem;
       if (typeof gerarFraseAbordagem === "function") return gerarFraseAbordagem(r.empresa);
-      return "";
+      return "(Carrega js/abordagem-frases.js — vê aviso em cima.)";
     }
 
     function persistSavedTsv(tsv) {
@@ -576,7 +587,8 @@
         statusFiltro.textContent = "";
       }
       if (vis === 0) {
-        statusFiltro.textContent = "Nenhum cliente corresponde ao filtro.";
+        statusFiltro.textContent =
+          "Nenhum cliente corresponde aos filtros (texto/número ou categoria). Se estiveres em «Estética» ou «Comércio» e a lista sumiu, escolhe «Todos».";
         return;
       }
       rows.forEach((r, i) => {
