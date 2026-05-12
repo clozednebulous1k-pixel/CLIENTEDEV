@@ -204,9 +204,21 @@
       letter-spacing: 0.04em;
     }
     .cloud-msg { font-size: 0.82rem; font-weight: 600; margin-top: 0.5rem; min-height: 1.25rem; }
-    .cloud-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 0.5rem; }
-    .cloud-row input[type="email"] { flex: 1; min-width: 12rem; border: var(--border); padding: 0.45rem 0.5rem; font: inherit; }
-    .cloud-row input[type="password"] { flex: 1; min-width: 9rem; max-width: 12rem; border: var(--border); padding: 0.45rem 0.5rem; font: inherit; }
+    .cloud-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: flex-start; margin-top: 0.5rem; }
+    .cloud-fields { display: flex; flex-direction: column; gap: 0.45rem; flex: 1 1 220px; min-width: min(100%, 16rem); max-width: 24rem; }
+    .cloud-fields input[type="email"],
+    .cloud-fields input[type="password"] {
+      width: 100%;
+      min-height: 2.6rem;
+      border: var(--border);
+      padding: 0.5rem 0.55rem;
+      font: inherit;
+      background: #fff;
+      pointer-events: auto;
+      position: relative;
+      z-index: 2;
+    }
+    .cloud-row > button { flex: 0 0 auto; align-self: center; }
   </style>
   <script src="supabase-config.js"></script>
 </head>
@@ -285,8 +297,10 @@
         Depois <strong>Enviar lista</strong> / <strong>Traz da nuvem</strong>. SQL <code>supabase/schema.sql</code>.
       </p>
       <div class="cloud-row">
-        <input type="email" data-sb="email" autocomplete="email" placeholder="teu@email.com" />
-        <input type="password" data-sb="password" autocomplete="current-password" placeholder="Senha" />
+        <div class="cloud-fields">
+          <input type="email" data-sb="email" autocomplete="username" placeholder="teu@email.com" />
+          <input type="password" data-sb="password" autocomplete="current-password" placeholder="Senha" />
+        </div>
         <button type="button" data-sb="signin">Entrar</button>
         <button type="button" class="secondary" data-sb="magic">Receber link</button>
         <button type="button" class="secondary" data-sb="out" hidden>Sair</button>

@@ -26,6 +26,7 @@ export async function bindSupabaseMapClientes(opts) {
     ;[btnSignin, btnMagic, btnOut, btnPush, btnPull].forEach((b) => {
       if (b) b.disabled = true;
     });
+    if (emailIn) emailIn.disabled = true;
     if (passIn) passIn.disabled = true;
     return;
   }
@@ -54,10 +55,8 @@ export async function bindSupabaseMapClientes(opts) {
     if (btnOut) btnOut.hidden = !inAuth;
     if (btnPush) btnPush.hidden = !inAuth;
     if (btnPull) btnPull.hidden = !inAuth;
-    if (emailIn) emailIn.disabled = inAuth;
-    if (passIn) passIn.disabled = inAuth;
-    if (btnSignin) btnSignin.disabled = inAuth;
-    if (btnMagic) btnMagic.disabled = inAuth;
+    /* Email/senha/Entrar ficam sempre clicáveis (evita sessão antiga ou extensão a “bloquear” o login). */
+    if (btnMagic) btnMagic.disabled = false;
   }
 
   sb.auth.onAuthStateChange((_ev, session) => {
