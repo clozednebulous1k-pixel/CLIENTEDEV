@@ -78,8 +78,36 @@
     .mini button { font-size: 0.75rem; padding: 0.3rem 0.45rem; box-shadow: 2px 2px 0 var(--ink); }
     .msg { font-size: 0.85rem; font-weight: 600; margin-top: 0.5rem; min-height: 1.2rem; }
     #appPanel[hidden], #loginPanel[hidden] { display: none !important; }
+    th.abord-col, td.abord-col {
+      min-width: 10rem;
+      max-width: min(28rem, 48vw);
+    }
+    .abord-snippet {
+      flex: 1 1 0;
+      min-width: min(100%, 7rem);
+      font-size: 0.76rem;
+      line-height: 1.4;
+      max-height: 5.2em;
+      overflow: hidden;
+      word-break: break-word;
+    }
+    .abord-row-actions {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+    }
+    button.icon-copy {
+      flex: 0 0 auto;
+      padding: 0.25rem 0.4rem;
+      font-size: 1rem;
+      line-height: 1;
+      min-width: 2.1rem;
+      box-shadow: 2px 2px 0 var(--ink);
+    }
   </style>
   <script src="supabase-config.js"></script>
+  <script src="js/abordagem-frases.js"></script>
 </head>
 <body>
   <p class="sub"><a href="clientes.html">← Voltar a Meus clientes</a> · <a href="index.html">Ferramenta completa</a></p>
@@ -87,6 +115,7 @@
   <p class="sub">
     Entra com <strong>email e senha</strong> do utilizador que criaste no Supabase (<strong>Authentication</strong> → Users), ou com <strong>link mágico</strong>.
     Na nuvem: <strong>um cliente por nome</strong>. <strong>Não contactado</strong> vs <strong>Já contactei</strong>.
+    A coluna <strong>Abordagem</strong> usa a mesma lógica que em <a href="clientes.html">Meus clientes</a> (e, se existir, o texto que guardaste lá na lista local).
   </p>
 
   <div class="panel" id="loginPanel">
@@ -110,7 +139,7 @@
       <button type="button" class="secondary" id="btnImportAbord">Importar lista de abordagem</button>
     </div>
     <label for="filterQ" style="margin-top: 0.75rem">Filtrar</label>
-    <input type="search" id="filterQ" placeholder="Nome ou telefone…" autocomplete="off" />
+    <input type="search" id="filterQ" placeholder="Nome, telefone ou trecho da abordagem…" autocomplete="off" />
     <label style="margin-top: 0.5rem; text-transform: none"><input type="checkbox" id="filterSóPend" /> Mostrar só ainda não contactados</label>
     <p class="msg" id="appMsg" aria-live="polite"></p>
   </div>
@@ -121,6 +150,7 @@
         <tr>
           <th>Estado</th>
           <th>Cliente</th>
+          <th class="abord-col">Abordagem</th>
           <th>Telefone(s)</th>
           <th>Ações</th>
         </tr>
@@ -152,6 +182,26 @@
 
     const KEY_TSV = "instaTool_mapsClientesTsv";
     const KEY_ABORD = "clientesPage_listaAbordagem";
+
+    function getListaAbordagemLocal() {
+      try {
+        const raw = localStorage.getItem(KEY_ABORD);
+        const arr = raw ? JSON.parse(raw) : [];
+        return Array.isArray(arr) ? arr : [];
+      } catch (_) {
+        return [];
+      }
+    }
+
+    /** Igual a clientes.html: prefer texto guardado localmente; senão gera por nome. */
+    function textoAbordagemParaPerfil(empresa) {
+      const key = (empresa || "").trim().toLowerCase();
+      const hit = getListaAbordagemLocal().find((x) => (x.empresa || "").trim().toLowerCase() === key);
+      if (hit && hit.abordagem) return hit.abordagem;
+      const gen = typeof window !== "undefined" && typeof window.gerarFraseAbordagem === "function" ? window.gerarFraseAbordagem : null;
+      if (gen) return gen(empresa);
+      return "(Carrega js/abordagem-frases.js ou guarda a lista em clientes.html.)";
+    }
 
     if (!url || !key || /SEU-PROJETO|COLOCA_AQUI/i.test(url + key)) {
       loginMsg.textContent = "Configura supabase-config.js com URL e chave anon.";
@@ -236,7 +286,8 @@
       if (q) {
         list = list.filter((r) => {
           const t = (r.telefone || "").toLowerCase();
-          return (r.empresa || "").toLowerCase().includes(q) || t.includes(q);
+          const ab = textoAbordagemParaPerfil(r.empresa).toLowerCase();
+          return (r.empresa || "").toLowerCase().includes(q) || t.includes(q) || ab.includes(q);
         });
       }
       tbody.innerHTML = "";
@@ -265,6 +316,33 @@
         const td1 = document.createElement("td");
         td1.style.fontWeight = "700";
         td1.textContent = r.empresa;
+        const fullAb = textoAbordagemParaPerfil(r.empresa);
+        const tdAb = document.createElement("td");
+        tdAb.className = "abord-col";
+        const abWrap = document.createElement("div");
+        abWrap.className = "abord-row-actions";
+        const snip = document.createElement("div");
+        snip.className = "abord-snippet";
+        snip.textContent = fullAb.trim() ? fullAb : "—";
+        snip.title = fullAb.trim() ? fullAb : "";
+        const copyAb = document.createElement("button");
+        copyAb.type = "button";
+        copyAb.className = "icon-copy secondary";
+        copyAb.setAttribute("aria-label", "Copiar texto de abordagem");
+        copyAb.title = "Copiar";
+        copyAb.innerHTML = "&#128203;";
+        copyAb.addEventListener("click", async () => {
+          if (!fullAb.trim()) return;
+          try {
+            await navigator.clipboard.writeText(fullAb);
+            appMsg.textContent = "Texto de abordagem copiado.";
+          } catch (_) {
+            appMsg.textContent = "Não foi possível copiar (HTTPS ou localhost).";
+          }
+        });
+        abWrap.appendChild(snip);
+        abWrap.appendChild(copyAb);
+        tdAb.appendChild(abWrap);
         const td2 = document.createElement("td");
         td2.style.whiteSpace = "pre-wrap";
         td2.textContent = r.telefone && r.telefone !== "—" ? r.telefone.replace(/; /g, " · ") : "—";
@@ -283,6 +361,7 @@
         td3.appendChild(b2);
         tr.appendChild(td0);
         tr.appendChild(td1);
+        tr.appendChild(tdAb);
         tr.appendChild(td2);
         tr.appendChild(td3);
         tbody.appendChild(tr);
