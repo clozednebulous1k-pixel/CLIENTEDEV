@@ -75,6 +75,7 @@
     .cloud-msg { font-size: 0.82rem; font-weight: 600; margin-top: 0.5rem; min-height: 1.25rem; }
     .cloud-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 0.5rem; }
     .cloud-row input[type="email"] { flex: 1; min-width: 12rem; border: var(--border); padding: 0.45rem 0.5rem; font: inherit; }
+    .cloud-row input[type="password"] { flex: 1; min-width: 9rem; max-width: 12rem; border: var(--border); padding: 0.45rem 0.5rem; font: inherit; }
     .filter-bar { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 0.5rem; }
     .filter-bar input[type="search"] { flex: 1; min-width: 10rem; border: var(--border); padding: 0.45rem 0.5rem; font: inherit; }
     .filter-bar label { display: inline-flex; align-items: center; gap: 0.35rem; text-transform: none; font-weight: 600; font-size: 0.85rem; margin: 0; }
@@ -94,10 +95,16 @@
 
   <div class="panel" id="sbCloudPanel">
     <label>Nuvem (Supabase)</label>
-    <p class="sub" style="margin-bottom: 0.35rem">Pedir <strong>link mágico</strong> no email → entrar → <strong>Enviar lista</strong> (mescla sem apagar contactos) ou <strong>Traz da nuvem</strong>. Vê também <a href="perfil.html">Meu perfil</a>. SQL: <code>supabase/schema.sql</code> (ficheiro único).</p>
+    <p class="sub" style="margin-bottom: 0.35rem">
+      Utilizador com <strong>email e senha</strong> no Supabase → <strong>Authentication</strong> → Users. Clica <strong>Entrar</strong>, ou <strong>Receber link</strong> sem senha.
+      Depois: <strong>Enviar lista</strong> (mescla sem apagar contactos) / <strong>Traz da nuvem</strong>.
+      <a href="perfil.html">Meu perfil</a> · SQL <code>supabase/schema.sql</code>.
+    </p>
     <div class="cloud-row">
       <input type="email" data-sb="email" autocomplete="email" placeholder="teu@email.com" />
-      <button type="button" data-sb="magic">Receber link</button>
+      <input type="password" data-sb="password" autocomplete="current-password" placeholder="Senha" />
+      <button type="button" data-sb="signin">Entrar</button>
+      <button type="button" class="secondary" data-sb="magic">Receber link</button>
       <button type="button" class="secondary" data-sb="out" hidden>Sair</button>
       <button type="button" class="secondary" data-sb="push" hidden>Enviar lista</button>
       <button type="button" class="secondary" data-sb="pull" hidden>Traz da nuvem</button>

@@ -36,7 +36,7 @@
       margin-bottom: 1rem;
     }
     label { display: block; font-weight: 700; font-size: 0.75rem; margin-bottom: 0.35rem; text-transform: uppercase; letter-spacing: 0.04em; }
-    input[type="email"], input[type="search"] {
+    input[type="email"], input[type="search"], input[type="password"] {
       width: 100%;
       max-width: 22rem;
       border: var(--border);
@@ -80,15 +80,18 @@
   <p class="sub"><a href="clientes.html">← Voltar a Meus clientes</a> · <a href="index.html">Ferramenta completa</a></p>
   <h1>Meu perfil</h1>
   <p class="sub">
-    Faz <strong>login</strong> com o mesmo email do Supabase. Aqui fica a tua lista na nuvem: <strong>cada cliente aparece uma vez</strong> (nome único).
-    <strong>Não contactado</strong> vs <strong>Já contactei</strong> para saberes quem falta.
+    Entra com <strong>email e senha</strong> do utilizador que criaste no Supabase (<strong>Authentication</strong> → Users), ou com <strong>link mágico</strong>.
+    Na nuvem: <strong>um cliente por nome</strong>. <strong>Não contactado</strong> vs <strong>Já contactei</strong>.
   </p>
 
   <div class="panel" id="loginPanel">
     <label for="emailIn">Email</label>
     <input type="email" id="emailIn" autocomplete="email" placeholder="teu@email.com" />
+    <label for="passIn" style="margin-top: 0.65rem">Senha</label>
+    <input type="password" id="passIn" autocomplete="current-password" placeholder="Senha do Supabase" />
     <div class="btn-row">
-      <button type="button" id="btnMagic">Receber link mágico</button>
+      <button type="button" id="btnSignin">Entrar</button>
+      <button type="button" class="secondary" id="btnMagic">Receber link mágico</button>
     </div>
     <p class="msg" id="loginMsg" aria-live="polite"></p>
   </div>
@@ -129,6 +132,8 @@
     const loginMsg = document.getElementById("loginMsg");
     const appMsg = document.getElementById("appMsg");
     const emailIn = document.getElementById("emailIn");
+    const passIn = document.getElementById("passIn");
+    const btnSignin = document.getElementById("btnSignin");
     const btnMagic = document.getElementById("btnMagic");
     const btnOut = document.getElementById("btnOut");
     const btnReload = document.getElementById("btnReload");
@@ -146,6 +151,8 @@
     if (!url || !key || /SEU-PROJETO|COLOCA_AQUI/i.test(url + key)) {
       loginMsg.textContent = "Configura supabase-config.js com URL e chave anon.";
       btnMagic.disabled = true;
+      btnSignin.disabled = true;
+      passIn.disabled = true;
     }
 
     const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
@@ -339,6 +346,26 @@
 
     const { data: first } = await sb.auth.getSession();
     uiSession(first.session);
+
+    btnSignin.addEventListener("click", async () => {
+      const email = emailIn.value.trim();
+      const password = passIn.value;
+      if (!email || !password) {
+        loginMsg.textContent = "Preenche email e senha (Authentication → Users no Supabase).";
+        return;
+      }
+      loginMsg.textContent = "A entrar…";
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) {
+        loginMsg.textContent = error.message || "Falha no login.";
+        return;
+      }
+      loginMsg.textContent = "Sessão iniciada.";
+    });
+
+    passIn.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter") btnSignin.click();
+    });
 
     btnMagic.addEventListener("click", async () => {
       const email = emailIn.value.trim();

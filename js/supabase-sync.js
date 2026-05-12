@@ -1,6 +1,6 @@
 /**
- * Painel mínimo: magic link + push/pull da tabela map_clientes.
- * Espera rows no formato { empresa: string, phones: string[] }.
+ * Login: email + senha (signInWithPassword) ou link mágico.
+ * Push/pull da tabela map_clientes. Rows: { empresa, phones }.
  */
 export async function bindSupabaseMapClientes(opts) {
   const url = opts.url && String(opts.url).trim();
@@ -13,6 +13,8 @@ export async function bindSupabaseMapClientes(opts) {
   if (!root || typeof getRows !== "function" || typeof applyRows !== "function") return;
 
   const emailIn = root.querySelector('[data-sb="email"]');
+  const passIn = root.querySelector('[data-sb="password"]');
+  const btnSignin = root.querySelector('[data-sb="signin"]');
   const btnMagic = root.querySelector('[data-sb="magic"]');
   const btnOut = root.querySelector('[data-sb="out"]');
   const btnPush = root.querySelector('[data-sb="push"]');
@@ -21,9 +23,10 @@ export async function bindSupabaseMapClientes(opts) {
   if (!url || !key || /SEU-PROJETO|COLOCA_AQUI/i.test(url + key)) {
     root.hidden = false;
     setCloudMsg("Configura supabase-config.js (URL + anon key). Vê supabase/schema.sql.");
-    ;[btnMagic, btnOut, btnPush, btnPull].forEach((b) => {
+    ;[btnSignin, btnMagic, btnOut, btnPush, btnPull].forEach((b) => {
       if (b) b.disabled = true;
     });
+    if (passIn) passIn.disabled = true;
     return;
   }
 
@@ -52,17 +55,40 @@ export async function bindSupabaseMapClientes(opts) {
     if (btnPush) btnPush.hidden = !inAuth;
     if (btnPull) btnPull.hidden = !inAuth;
     if (emailIn) emailIn.disabled = inAuth;
+    if (passIn) passIn.disabled = inAuth;
+    if (btnSignin) btnSignin.disabled = inAuth;
     if (btnMagic) btnMagic.disabled = inAuth;
   }
 
   sb.auth.onAuthStateChange((_ev, session) => {
     refreshAuthUi(session);
     if (session) setCloudMsg("Sessão ativa.");
-    else setCloudMsg("Sem sessão. Pede o link mágico no email.");
+    else setCloudMsg("Sem sessão. Entra com email e senha ou pede o link no email.");
   });
 
   const { data: sess0 } = await sb.auth.getSession();
   refreshAuthUi(sess0 && sess0.session);
+
+  if (btnSignin && emailIn && passIn) {
+    btnSignin.addEventListener("click", async () => {
+      const email = emailIn.value.trim();
+      const password = passIn.value;
+      if (!email || !password) {
+        setCloudMsg("Preenche email e senha (utilizador criado no Supabase → Authentication).");
+        return;
+      }
+      setCloudMsg("A entrar…");
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) {
+        setCloudMsg(error.message || "Falha no login. Confirma o email e a senha no dashboard.");
+        return;
+      }
+      setCloudMsg("Sessão iniciada.");
+    });
+    passIn.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter") btnSignin.click();
+    });
+  }
 
   if (btnMagic && emailIn) {
     btnMagic.addEventListener("click", async () => {
@@ -96,7 +122,7 @@ export async function bindSupabaseMapClientes(opts) {
     btnPush.addEventListener("click", async () => {
       const { data: sess, error: e1 } = await sb.auth.getSession();
       if (e1 || !sess || !sess.session) {
-        setCloudMsg("Entra primeiro (link mágico).");
+        setCloudMsg("Entra primeiro (email e senha ou link mágico).");
         return;
       }
       const uid = sess.session.user.id;
@@ -146,7 +172,7 @@ export async function bindSupabaseMapClientes(opts) {
     btnPull.addEventListener("click", async () => {
       const { data: sess, error: e1 } = await sb.auth.getSession();
       if (e1 || !sess || !sess.session) {
-        setCloudMsg("Entra primeiro (link mágico).");
+        setCloudMsg("Entra primeiro (email e senha ou link mágico).");
         return;
       }
       const uid = sess.session.user.id;

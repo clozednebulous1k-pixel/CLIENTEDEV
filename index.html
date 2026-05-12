@@ -206,6 +206,7 @@
     .cloud-msg { font-size: 0.82rem; font-weight: 600; margin-top: 0.5rem; min-height: 1.25rem; }
     .cloud-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 0.5rem; }
     .cloud-row input[type="email"] { flex: 1; min-width: 12rem; border: var(--border); padding: 0.45rem 0.5rem; font: inherit; }
+    .cloud-row input[type="password"] { flex: 1; min-width: 9rem; max-width: 12rem; border: var(--border); padding: 0.45rem 0.5rem; font: inherit; }
   </style>
   <script src="supabase-config.js"></script>
 </head>
@@ -280,11 +281,14 @@
     <div class="panel" id="sbCloudPanelIndex" style="margin-top: 1rem">
       <label>Nuvem (Supabase) — mesma lista que em <a href="clientes.html">Meus clientes</a></label>
       <p class="hint" style="margin-bottom: 0.35rem">
-        Link mágico no email → <strong>Enviar lista</strong> / <strong>Traz da nuvem</strong>. SQL em <code>supabase/schema.sql</code>.
+        <strong>Email + senha</strong> (utilizador em Authentication → Users) com <strong>Entrar</strong>, ou <strong>Receber link</strong>.
+        Depois <strong>Enviar lista</strong> / <strong>Traz da nuvem</strong>. SQL <code>supabase/schema.sql</code>.
       </p>
       <div class="cloud-row">
         <input type="email" data-sb="email" autocomplete="email" placeholder="teu@email.com" />
-        <button type="button" data-sb="magic">Receber link</button>
+        <input type="password" data-sb="password" autocomplete="current-password" placeholder="Senha" />
+        <button type="button" data-sb="signin">Entrar</button>
+        <button type="button" class="secondary" data-sb="magic">Receber link</button>
         <button type="button" class="secondary" data-sb="out" hidden>Sair</button>
         <button type="button" class="secondary" data-sb="push" hidden>Enviar lista</button>
         <button type="button" class="secondary" data-sb="pull" hidden>Traz da nuvem</button>
