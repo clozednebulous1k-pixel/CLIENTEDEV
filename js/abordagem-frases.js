@@ -38,6 +38,7 @@ function segmento(empresa) {
 
 /**
  * Categoria grossa para filtros na UI (alinhado ao segmento interno).
+ * Para novas categorias: acrescenta ramos aqui (e, se precisares, novos `return` em `segmento()`).
  * @param {string} empresa
  * @returns {"estetica"|"comercio"|"outros"}
  */
