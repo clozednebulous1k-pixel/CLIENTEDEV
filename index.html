@@ -244,7 +244,7 @@
     <p>Uma linha por contato:</p>
     <ul>
       <li><code>usuario</code> ou <code>@usuario</code></li>
-      <li><code>usuario | Nome do cliente</code> — o filtro busca nos dois lados; use <code>{{nome}}</code> para o nome e <code>{{arroba}}</code> para <code>@usuario</code> no modelo.</li>
+      <li><code>usuario | Nome do cliente</code> — o filtro busca nos dois lados; use <code>{{nome}}</code> para o nome, <code>{{arroba}}</code> para <code>@usuario</code> do cliente e <code>{{meuig}}</code> para o teu Instagram fixo (<code>@alessandrosilvaxz_</code>) no modelo.</li>
     </ul>
   </div>
 
@@ -275,8 +275,8 @@
     </p>
     <label for="mapsPaste">Cole aqui o texto dos resultados</label>
     <textarea id="mapsPaste" spellcheck="false" style="min-height: 160px" placeholder="Cole a lista do Maps — com ou sem linha ‘Rotas’ no fim de cada card"></textarea>
-    <label for="mapsWaTemplate">Modelo de mensagem WhatsApp (<code>{{nome}}</code> · <code>{{telefone}}</code> · <code>{{wa}}</code>)</label>
-    <textarea id="mapsWaTemplate" spellcheck="false" style="min-height: 120px">Olá, tudo bem? Sou [SEU NOME], trabalho com desenvolvimento de sites para comércio. Vi o {{nome}} no Google Maps ({{telefone}}) e queria saber se faz sentido conversarmos: posso montar um site alinhado à identidade da marca (cores, logo, fotos, WhatsApp, endereço) e fácil de atualizar quando chegar coleção nova. Envio portfólio e um orçamento sem compromisso. Obrigado pela atenção.</textarea>
+    <label for="mapsWaTemplate">Modelo de mensagem WhatsApp (<code>{{nome}}</code> · <code>{{telefone}}</code> · <code>{{wa}}</code> · <code>{{meuig}}</code>)</label>
+    <textarea id="mapsWaTemplate" spellcheck="false" style="min-height: 120px">Olá, tudo bem? Sou Alessandro Silva (Instagram {{meuig}}), trabalho com desenvolvimento de sites para comércio. Vi o {{nome}} no Google Maps ({{telefone}}) e queria saber se faz sentido conversarmos: posso montar um site alinhado à identidade da marca (cores, logo, fotos, WhatsApp, endereço) e fácil de atualizar quando chegar coleção nova. Envio portfólio e um orçamento sem compromisso. Obrigado pela atenção.</textarea>
     <p class="hint">
       <strong>Variantes curtas</strong> (podes colar no modelo acima):<br />
       1) «Sou programador(a) e faço sites sob medida; posso ajudar a ter uma vitrine online com a cara da marca. Posso enviar referências e valores?»<br />
@@ -372,8 +372,8 @@ parceiro_som
     <label>Resultados — clique para selecionar</label>
     <div class="handles" id="handleList" role="listbox" aria-label="Lista filtrada de handles"></div>
 
-    <label for="templateInput">Modelo (<code>{{nome}}</code> · <code>{{arroba}}</code>)</label>
-    <textarea id="templateInput" spellcheck="false">Olá {{nome}}, tudo bem? ({{arroba}}) Queria falar sobre um orçamento. Abraço!</textarea>
+    <label for="templateInput">Modelo (<code>{{nome}}</code> · <code>{{arroba}}</code> · <code>{{meuig}}</code>)</label>
+    <textarea id="templateInput" spellcheck="false">Olá {{nome}}, tudo bem? Sou {{meuig}} no Instagram — desenvolvo sites e softwares. Vi o perfil {{arroba}} e queria saber se faz sentido conversarmos (orçamento sem compromisso). Abraço, Alessandro.</textarea>
 
     <label>Pré-visualização</label>
     <div class="preview" id="preview" aria-live="polite">Selecione alguém na lista.</div>
@@ -396,6 +396,9 @@ parceiro_som
       mapsWaTemplate: "instaTool_mapsWaTemplate",
       mapsClientesTsv: "instaTool_mapsClientesTsv",
     };
+
+    /** Teu @ no Instagram — substituído onde o modelo tiver {{meuig}} (DM e WhatsApp). */
+    const MEU_INSTAGRAM = "@alessandrosilvaxz_";
 
     const listInput = document.getElementById("listInput");
     const searchInput = document.getElementById("searchInput");
@@ -500,7 +503,13 @@ parceiro_som
     }
 
     function fillTemplate(tpl, entry) {
-      return tpl.split("{{nome}}").join(entry.nome).split("{{arroba}}").join(entry.arroba);
+      return tpl
+        .split("{{nome}}")
+        .join(entry.nome)
+        .split("{{arroba}}")
+        .join(entry.arroba)
+        .split("{{meuig}}")
+        .join(MEU_INSTAGRAM);
     }
 
     function renderList() {
@@ -840,7 +849,15 @@ parceiro_som
 
     function fillWaTemplate(tpl, nome, phone) {
       const wa = isBrMobile(phone) ? waLink(phone) : "—";
-      return tpl.split("{{nome}}").join(nome).split("{{telefone}}").join(phone || "—").split("{{wa}}").join(wa);
+      return tpl
+        .split("{{nome}}")
+        .join(nome)
+        .split("{{telefone}}")
+        .join(phone || "—")
+        .split("{{wa}}")
+        .join(wa)
+        .split("{{meuig}}")
+        .join(MEU_INSTAGRAM);
     }
 
     function analyzeMapsText(text) {

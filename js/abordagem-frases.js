@@ -1,8 +1,9 @@
 /**
  * Frases de abordagem distintas por cliente (hash + segmento).
- * Nome fixo: Alessandro Silva Cardoso — sites e softwares.
+ * Nome fixo: Alessandro Silva Cardoso — sites e softwares (@alessandrosilvaxz_ no Instagram).
  */
 const VENDEDOR = "Alessandro Silva Cardoso";
+const VENDEDOR_INSTAGRAM = "@alessandrosilvaxz_";
 
 function hashStr(s) {
   let h = 0;
@@ -33,7 +34,7 @@ function gerarFraseAbordagem(empresa, rowIndex) {
   const nome = String(empresa || "a empresa").trim();
   const seg = segmento(nome);
   const h = hashStr(nome) + rowIndex * 17 + seg.length * 31;
-  const intro = `Olá, meu nome é ${VENDEDOR}, desenvolvo sites e softwares.`;
+  const intro = `Olá, meu nome é ${VENDEDOR} (${VENDEDOR_INSTAGRAM} no Instagram), desenvolvo sites e softwares.`;
 
   const doresGeral = [
     `Gostaria de saber se você não tem interesse numa conversa curta, sem compromisso, sobre como fortalecer a imagem da ${nome} online?`,

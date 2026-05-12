@@ -50,6 +50,42 @@ export async function bindSupabaseMapClientes(opts) {
     });
   }
 
+  /**
+   * O PostgreSQL recusa um único upsert que toca na mesma linha duas vezes (constraint user_id+empresa).
+   * Agrupa por nome normalizado e junta telefones.
+   */
+  function rowsToUpsertPayload(rows, uid, preserve) {
+    const byKey = new Map();
+    for (const r of rows) {
+      const empresa = String(r.empresa || "").trim();
+      if (!empresa) continue;
+      const k = empresa.toLowerCase();
+      const telParts =
+        r.phones && r.phones.length
+          ? r.phones.map((x) => String(x).trim()).filter(Boolean)
+          : [];
+      if (!byKey.has(k)) {
+        byKey.set(k, { empresa, telSet: new Set(telParts) });
+      } else {
+        const ent = byKey.get(k);
+        if (empresa.length > ent.empresa.length) ent.empresa = empresa;
+        telParts.forEach((t) => ent.telSet.add(t));
+      }
+    }
+    const out = [];
+    for (const [k, ent] of byKey) {
+      const tels = [...ent.telSet];
+      out.push({
+        user_id: uid,
+        empresa: ent.empresa,
+        telefone: tels.length ? tels.join("; ") : "—",
+        updated_at: new Date().toISOString(),
+        contatado_em: preserve[k] !== undefined ? preserve[k] : null,
+      });
+    }
+    return out;
+  }
+
   function refreshAuthUi(session) {
     const inAuth = !!session;
     if (btnOut) btnOut.hidden = !inAuth;
@@ -143,16 +179,11 @@ export async function bindSupabaseMapClientes(opts) {
       (existing || []).forEach((r) => {
         preserve[(r.empresa || "").trim().toLowerCase()] = r.contatado_em;
       });
-      const payload = rows.map((r) => {
-        const k = (r.empresa || "").trim().toLowerCase();
-        return {
-          user_id: uid,
-          empresa: r.empresa,
-          telefone: r.phones && r.phones.length ? r.phones.join("; ") : "—",
-          updated_at: new Date().toISOString(),
-          contatado_em: preserve[k] !== undefined ? preserve[k] : null,
-        };
-      });
+      const payload = rowsToUpsertPayload(rows, uid, preserve);
+      if (!payload.length) {
+        setCloudMsg("Não há linhas com nome de empresa para enviar.");
+        return;
+      }
       const { error: upErr } = await sb.from("map_clientes").upsert(payload, {
         onConflict: "user_id,empresa",
       });
@@ -163,7 +194,17 @@ export async function bindSupabaseMapClientes(opts) {
         );
         return;
       }
-      setCloudMsg("Lista mesclada na nuvem (" + rows.length + " linhas). Quem já tinhas marcado como contactado mantém-se.");
+      let msg =
+        "Lista mesclada na nuvem (" +
+        payload.length +
+        " linha(s)). Quem já tinhas marcado como contactado mantém-se.";
+      if (payload.length < rows.length) {
+        msg +=
+          " Agrupámos " +
+          (rows.length - payload.length) +
+          " entrada(s) com o mesmo nome (evita erro do PostgreSQL no upsert).";
+      }
+      setCloudMsg(msg);
     });
   }
 

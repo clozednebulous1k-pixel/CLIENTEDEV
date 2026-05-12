@@ -195,6 +195,39 @@
       });
     }
 
+    /** Evita erro PostgreSQL: ON CONFLICT não pode atualizar a mesma linha duas vezes no mesmo comando. */
+    function rowsToUpsertPayload(localRows, uid, preserve) {
+      const byKey = new Map();
+      for (const r of localRows) {
+        const empresa = String(r.empresa || "").trim();
+        if (!empresa) continue;
+        const k = empresa.toLowerCase();
+        const telParts =
+          r.phones && r.phones.length
+            ? r.phones.map((x) => String(x).trim()).filter(Boolean)
+            : [];
+        if (!byKey.has(k)) {
+          byKey.set(k, { empresa, telSet: new Set(telParts) });
+        } else {
+          const ent = byKey.get(k);
+          if (empresa.length > ent.empresa.length) ent.empresa = empresa;
+          telParts.forEach((t) => ent.telSet.add(t));
+        }
+      }
+      const out = [];
+      for (const [k, ent] of byKey) {
+        const tels = [...ent.telSet];
+        out.push({
+          user_id: uid,
+          empresa: ent.empresa,
+          telefone: tels.length ? tels.join("; ") : "—",
+          updated_at: new Date().toISOString(),
+          contatado_em: preserve[k] !== undefined ? preserve[k] : null,
+        });
+      }
+      return out;
+    }
+
     function render() {
       const q = (filterQ.value || "").trim().toLowerCase();
       const sóPend = filterSóPend.checked;
@@ -306,17 +339,11 @@
       (existing || []).forEach((r) => {
         preserve[(r.empresa || "").trim().toLowerCase()] = r.contatado_em;
       });
-      const payload = localRows.map((r) => {
-        const k = (r.empresa || "").trim().toLowerCase();
-        const tel = r.phones && r.phones.length ? r.phones.join("; ") : "—";
-        return {
-          user_id: uid,
-          empresa: r.empresa,
-          telefone: tel,
-          updated_at: new Date().toISOString(),
-          contatado_em: preserve[k] !== undefined ? preserve[k] : null,
-        };
-      });
+      const payload = rowsToUpsertPayload(localRows, uid, preserve);
+      if (!payload.length) {
+        appMsg.textContent = "Nada com nome de empresa para importar.";
+        return;
+      }
       appMsg.textContent = "A guardar " + payload.length + "…";
       const { error } = await sb.from("map_clientes").upsert(payload, {
         onConflict: "user_id,empresa",
@@ -325,7 +352,11 @@
         appMsg.textContent = error.message + " — Corre supabase/schema.sql no SQL Editor (ficheiro completo).";
         return;
       }
-      appMsg.textContent = "Importação feita: mesclado sem apagar quem já tinhas marcado como contactado.";
+      let ok = "Importação feita: mesclado sem apagar quem já tinhas marcado como contactado.";
+      if (payload.length < localRows.length) {
+        ok += " (" + (localRows.length - payload.length) + " duplicata(s) no nome foram agrupadas.)";
+      }
+      appMsg.textContent = ok;
       await loadRows();
     }
 
