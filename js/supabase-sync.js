@@ -37,15 +37,6 @@ export async function bindSupabaseMapClientes(opts) {
     },
   });
 
-  function rowsToDb(userId, rows) {
-    return rows.map((r) => ({
-      user_id: userId,
-      empresa: r.empresa,
-      telefone: r.phones && r.phones.length ? r.phones.join("; ") : "—",
-      updated_at: new Date().toISOString(),
-    }));
-  }
-
   function dbToRows(list) {
     return (list || []).map((row) => {
       const t = (row.telefone || "").trim();
@@ -114,19 +105,40 @@ export async function bindSupabaseMapClientes(opts) {
         setCloudMsg("Não há linhas na tabela para enviar.");
         return;
       }
-      setCloudMsg("A substituir lista na nuvem…");
-      const { error: delErr } = await sb.from("map_clientes").delete().eq("user_id", uid);
-      if (delErr) {
-        setCloudMsg(delErr.message || "Erro ao limpar nuvem.");
+      setCloudMsg("A mesclar na nuvem (sem duplicar por nome)…");
+      const { data: existing, error: exErr } = await sb
+        .from("map_clientes")
+        .select("empresa, contatado_em")
+        .eq("user_id", uid);
+      if (exErr) {
+        setCloudMsg(exErr.message || "Erro ao ler estado de contacto.");
         return;
       }
-      const payload = rowsToDb(uid, rows);
-      const { error: insErr } = await sb.from("map_clientes").insert(payload);
-      if (insErr) {
-        setCloudMsg(insErr.message || "Erro ao inserir.");
+      const preserve = {};
+      (existing || []).forEach((r) => {
+        preserve[(r.empresa || "").trim().toLowerCase()] = r.contatado_em;
+      });
+      const payload = rows.map((r) => {
+        const k = (r.empresa || "").trim().toLowerCase();
+        return {
+          user_id: uid,
+          empresa: r.empresa,
+          telefone: r.phones && r.phones.length ? r.phones.join("; ") : "—",
+          updated_at: new Date().toISOString(),
+          contatado_em: preserve[k] !== undefined ? preserve[k] : null,
+        };
+      });
+      const { error: upErr } = await sb.from("map_clientes").upsert(payload, {
+        onConflict: "user_id,empresa",
+      });
+      if (upErr) {
+        setCloudMsg(
+          upErr.message ||
+            "Erro ao guardar. Corre o SQL completo em supabase/schema.sql (coluna contatado_em e políticas)."
+        );
         return;
       }
-      setCloudMsg("Lista guardada na nuvem (" + rows.length + " linhas).");
+      setCloudMsg("Lista mesclada na nuvem (" + rows.length + " linhas). Quem já tinhas marcado como contactado mantém-se.");
     });
   }
 

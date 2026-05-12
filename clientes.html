@@ -75,17 +75,26 @@
     .cloud-msg { font-size: 0.82rem; font-weight: 600; margin-top: 0.5rem; min-height: 1.25rem; }
     .cloud-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 0.5rem; }
     .cloud-row input[type="email"] { flex: 1; min-width: 12rem; border: var(--border); padding: 0.45rem 0.5rem; font: inherit; }
+    .filter-bar { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 0.5rem; }
+    .filter-bar input[type="search"] { flex: 1; min-width: 10rem; border: var(--border); padding: 0.45rem 0.5rem; font: inherit; }
+    .filter-bar label { display: inline-flex; align-items: center; gap: 0.35rem; text-transform: none; font-weight: 600; font-size: 0.85rem; margin: 0; }
+    .cell-check { width: 2.25rem; text-align: center; }
+    .cell-frase { font-size: 0.82rem; line-height: 1.45; max-width: 36rem; }
+    .section-title { font-size: 1.2rem; margin: 1.25rem 0 0.5rem; font-weight: 800; }
+    .mini-actions { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+    .mini-actions button { font-size: 0.8rem; padding: 0.35rem 0.55rem; box-shadow: 2px 2px 0 var(--ink); }
   </style>
   <script src="supabase-config.js"></script>
+  <script src="js/abordagem-frases.js"></script>
 </head>
 <body>
-  <p class="sub"><a href="index.html">← Ferramenta completa (Instagram + Maps)</a></p>
+  <p class="sub"><a href="index.html">← Ferramenta completa (Instagram + Maps)</a> · <a href="perfil.html">Meu perfil</a> (login — quem já chamei)</p>
   <h1>Meus clientes</h1>
   <p class="sub">A lista fica <strong>guardada neste browser</strong> depois de analisares (memória local do site). Com <strong>rodar.bat</strong> também podes carregar <code>clientes.tsv</code> / <code>colagem.txt</code> da pasta. Opcional: <strong>Supabase</strong> para a mesma lista noutro PC.</p>
 
   <div class="panel" id="sbCloudPanel">
     <label>Nuvem (Supabase)</label>
-    <p class="sub" style="margin-bottom: 0.35rem">Pedir <strong>link mágico</strong> no email → entrar → <strong>Enviar lista</strong> ou <strong>Traz da nuvem</strong>. Correr o SQL em <code>supabase/schema.sql</code> no teu projeto.</p>
+    <p class="sub" style="margin-bottom: 0.35rem">Pedir <strong>link mágico</strong> no email → entrar → <strong>Enviar lista</strong> (mescla sem apagar contactos) ou <strong>Traz da nuvem</strong>. Vê também <a href="perfil.html">Meu perfil</a>. SQL: <code>supabase/schema.sql</code> (ficheiro único).</p>
     <div class="cloud-row">
       <input type="email" data-sb="email" autocomplete="email" placeholder="teu@email.com" />
       <button type="button" data-sb="magic">Receber link</button>
@@ -108,18 +117,48 @@
   </div>
 
   <p class="meta" id="summary" aria-live="polite"></p>
+  <div class="panel" id="filtrosWrap" hidden>
+    <label for="filterText">Filtrar por nome ou número</label>
+    <div class="filter-bar">
+      <input type="search" id="filterText" placeholder="Ex.: comércio, (11)…" autocomplete="off" />
+      <label><input type="checkbox" id="filterComTel" /> Só com telefone</label>
+      <label><input type="checkbox" id="filterSelectAll" checked title="Marcar/desmarcar todos os visíveis" /> Todos visíveis</label>
+    </div>
+    <div class="btn-row" style="margin-top: 0.65rem">
+      <button type="button" id="btnGuardarLista">Guardar</button>
+      <button type="button" class="secondary" id="btnLimparListaGuardada">Limpar lista guardada</button>
+      <span class="status" id="statusFiltro"></span>
+    </div>
+  </div>
   <div class="wrap" id="wrap" hidden>
     <table>
       <thead>
-        <tr><th>Cliente</th><th>Número(s)</th></tr>
+        <tr><th class="cell-check">✓</th><th>Cliente</th><th>Número(s)</th></tr>
       </thead>
       <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+  <h2 class="section-title" id="tituloListaGuardada" hidden>Lista guardada para abordagem</h2>
+  <p class="sub" id="hintListaGuardada" hidden style="margin-top: -0.25rem">Cada cliente tem uma <strong>frase diferente</strong>, com o teu nome e foco nas dores do segmento. Usa <strong>Guardar</strong> depois de filtrar.</p>
+  <div class="wrap" id="savedWrap" hidden>
+    <table>
+      <thead>
+        <tr>
+          <th>Cliente</th>
+          <th>Número(s)</th>
+          <th>Frase de abordagem</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="savedTbody"></tbody>
     </table>
   </div>
 
   <script>
     const KEY = "clientesPage_paste";
     const KEY_SAVED_TSV = "instaTool_mapsClientesTsv";
+    const KEY_ABORDAGEM = "clientesPage_listaAbordagem";
     const paste = document.getElementById("paste");
     const btnGo = document.getElementById("btnGo");
     const btnCopy = document.getElementById("btnCopy");
@@ -128,11 +167,42 @@
     const summary = document.getElementById("summary");
     const wrap = document.getElementById("wrap");
     const tbody = document.getElementById("tbody");
+    const filtrosWrap = document.getElementById("filtrosWrap");
+    const filterText = document.getElementById("filterText");
+    const filterComTel = document.getElementById("filterComTel");
+    const filterSelectAll = document.getElementById("filterSelectAll");
+    const btnGuardarLista = document.getElementById("btnGuardarLista");
+    const btnLimparListaGuardada = document.getElementById("btnLimparListaGuardada");
+    const statusFiltro = document.getElementById("statusFiltro");
+    const savedWrap = document.getElementById("savedWrap");
+    const savedTbody = document.getElementById("savedTbody");
+    const tituloListaGuardada = document.getElementById("tituloListaGuardada");
+    const hintListaGuardada = document.getElementById("hintListaGuardada");
+
+    let savedAbordagem = [];
 
     try {
       const s = localStorage.getItem(KEY);
       if (s != null) paste.value = s;
     } catch (_) {}
+
+    function loadSavedAbordagem() {
+      try {
+        const raw = localStorage.getItem(KEY_ABORDAGEM);
+        savedAbordagem = raw ? JSON.parse(raw) : [];
+        if (!Array.isArray(savedAbordagem)) savedAbordagem = [];
+      } catch (_) {
+        savedAbordagem = [];
+      }
+    }
+
+    function persistAbordagem() {
+      try {
+        localStorage.setItem(KEY_ABORDAGEM, JSON.stringify(savedAbordagem));
+      } catch (_) {}
+    }
+
+    loadSavedAbordagem();
 
     function persistSavedTsv(tsv) {
       if (!tsv || !tsv.trim()) return;
@@ -341,23 +411,113 @@
     let lastRows = [];
     let lastTsv = "";
 
-    function render(rows) {
+    function getFilteredRows() {
+      if (!lastRows.length) return [];
+      const q = (filterText.value || "").trim().toLowerCase();
+      const soTel = filterComTel.checked;
+      return lastRows.filter((r) => {
+        if (soTel && !r.phones.length) return false;
+        if (!q) return true;
+        const telStr = (r.phones || []).join(" ").toLowerCase();
+        return (r.empresa || "").toLowerCase().includes(q) || telStr.includes(q);
+      });
+    }
+
+    function renderMain() {
+      const rows = getFilteredRows();
       tbody.innerHTML = "";
-      if (!rows.length) {
+      if (!lastRows.length) {
         wrap.hidden = true;
+        filtrosWrap.hidden = true;
         return;
       }
-      rows.forEach((r) => {
+      wrap.hidden = false;
+      filtrosWrap.hidden = false;
+      const total = lastRows.length;
+      const vis = rows.length;
+      if (vis < total) {
+        statusFiltro.textContent = "Filtro: a mostrar " + vis + " de " + total + " clientes.";
+      } else if (filterComTel.checked) {
+        statusFiltro.textContent = "Filtro: " + vis + " com telefone (de " + total + ").";
+      } else {
+        statusFiltro.textContent = "";
+      }
+      if (vis === 0) {
+        statusFiltro.textContent = "Nenhum cliente corresponde ao filtro.";
+        return;
+      }
+      rows.forEach((r, i) => {
         const tr = document.createElement("tr");
+        const td0 = document.createElement("td");
+        td0.className = "cell-check";
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.className = "row-check";
+        cb.checked = filterSelectAll.checked;
+        cb.dataset.idx = String(i);
+        td0.appendChild(cb);
         const a = document.createElement("td");
         a.textContent = r.empresa;
         const b = document.createElement("td");
         b.textContent = r.phones.length ? r.phones.join("  ·  ") : "—";
+        tr.appendChild(td0);
         tr.appendChild(a);
         tr.appendChild(b);
         tbody.appendChild(tr);
       });
-      wrap.hidden = false;
+    }
+
+    function renderSavedList() {
+      savedTbody.innerHTML = "";
+      const has = savedAbordagem.length > 0;
+      savedWrap.hidden = !has;
+      tituloListaGuardada.hidden = !has;
+      hintListaGuardada.hidden = !has;
+      savedAbordagem.forEach((item) => {
+        const tr = document.createElement("tr");
+        const t1 = document.createElement("td");
+        t1.textContent = item.empresa;
+        const t2 = document.createElement("td");
+        t2.textContent = item.phones && item.phones.length ? item.phones.join(" · ") : "—";
+        const t3 = document.createElement("td");
+        t3.className = "cell-frase";
+        t3.textContent = item.abordagem;
+        const t4 = document.createElement("td");
+        t4.className = "mini-actions";
+        const b1 = document.createElement("button");
+        b1.type = "button";
+        b1.className = "secondary";
+        b1.textContent = "Copiar frase";
+        b1.addEventListener("click", async () => {
+          try {
+            await navigator.clipboard.writeText(item.abordagem);
+            statusFiltro.textContent = "Frase copiada para a área de transferência.";
+          } catch (_) {
+            status.textContent = "Não foi possível copiar automaticamente.";
+          }
+        });
+        const b2 = document.createElement("button");
+        b2.type = "button";
+        b2.className = "secondary";
+        b2.textContent = "Remover";
+        b2.addEventListener("click", () => {
+          savedAbordagem = savedAbordagem.filter((x) => x.id !== item.id);
+          persistAbordagem();
+          renderSavedList();
+        });
+        t4.appendChild(b1);
+        t4.appendChild(b2);
+        tr.appendChild(t1);
+        tr.appendChild(t2);
+        tr.appendChild(t3);
+        tr.appendChild(t4);
+        savedTbody.appendChild(tr);
+      });
+    }
+
+    function novoId() {
+      if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
+      return "id_" + Date.now() + "_" + Math.floor(Math.random() * 1e6);
     }
 
     function restoreSavedTsv() {
@@ -375,7 +535,8 @@
           " · Com telefone: " +
           comTel +
           " (memória do browser — mesma lista que na página completa)";
-        render(lastRows);
+        renderMain();
+        renderSavedList();
         status.textContent = "Lista restaurada do que já tinhas pedido neste site.";
         return true;
       } catch (_) {
@@ -389,12 +550,15 @@
         status.textContent = "Cola o texto primeiro.";
         summary.textContent = "";
         wrap.hidden = true;
+        filtrosWrap.hidden = true;
         tbody.innerHTML = "";
+        statusFiltro.textContent = "";
         lastRows = [];
         lastTsv = "";
         try {
           localStorage.removeItem(KEY_SAVED_TSV);
         } catch (_) {}
+        renderSavedList();
         return;
       }
       lastRows = analyzeRows(text);
@@ -402,7 +566,8 @@
       const comTel = lastRows.filter((r) => r.phones.length).length;
       summary.textContent =
         "Linhas na tabela: " + lastRows.length + " · Com telefone no texto: " + comTel;
-      render(lastRows);
+      renderMain();
+      renderSavedList();
       status.textContent = "Pronto. Lista guardada neste browser.";
       persistSavedTsv(lastTsv);
       try {
@@ -414,6 +579,61 @@
       try {
         localStorage.setItem(KEY, paste.value);
       } catch (_) {}
+    });
+
+    filterText.addEventListener("input", () => renderMain());
+    filterComTel.addEventListener("change", () => renderMain());
+    filterSelectAll.addEventListener("change", () => {
+      document.querySelectorAll(".row-check").forEach((c) => {
+        c.checked = filterSelectAll.checked;
+      });
+    });
+
+    btnGuardarLista.addEventListener("click", () => {
+      const vis = getFilteredRows();
+      const checks = tbody.querySelectorAll(".row-check");
+      const picked = [];
+      checks.forEach((cb) => {
+        if (!cb.checked) return;
+        const idx = parseInt(cb.dataset.idx, 10);
+        if (!isNaN(idx) && vis[idx]) picked.push(vis[idx]);
+      });
+      if (!picked.length) {
+        status.textContent = "Marca os clientes na coluna ✓ ou ajusta o filtro.";
+        return;
+      }
+      const gen = typeof gerarFraseAbordagem === "function" ? gerarFraseAbordagem : null;
+      if (!gen) {
+        status.textContent = "Recarrega a página (falta js/abordagem-frases.js).";
+        return;
+      }
+      picked.forEach((r, j) => {
+        const key = (r.empresa || "").trim().toLowerCase();
+        const salt = savedAbordagem.length + j;
+        const frase = gen(r.empresa, salt);
+        const i = savedAbordagem.findIndex((x) => (x.empresa || "").trim().toLowerCase() === key);
+        const entry = {
+          id: i >= 0 ? savedAbordagem[i].id : novoId(),
+          empresa: r.empresa,
+          phones: (r.phones || []).slice(),
+          abordagem: frase,
+        };
+        if (i >= 0) savedAbordagem[i] = entry;
+        else savedAbordagem.push(entry);
+      });
+      persistAbordagem();
+      renderSavedList();
+      status.textContent =
+        "Guardados " + picked.length + " cliente(s) na lista de abordagem (uma frase distinta por cliente).";
+    });
+
+    btnLimparListaGuardada.addEventListener("click", () => {
+      if (!savedAbordagem.length) return;
+      if (!confirm("Apagar toda a lista guardada de abordagem?")) return;
+      savedAbordagem = [];
+      persistAbordagem();
+      renderSavedList();
+      status.textContent = "Lista guardada limpa.";
     });
 
     btnGo.addEventListener("click", run);
@@ -452,7 +672,8 @@
       const comTel = lastRows.filter((r) => r.phones.length).length;
       summary.textContent =
         "Linhas na tabela: " + lastRows.length + " · Com telefone: " + comTel + " (nuvem Supabase)";
-      render(lastRows);
+      renderMain();
+      renderSavedList();
       persistSavedTsv(lastTsv);
     }
 
@@ -478,7 +699,8 @@
               " · Com telefone: " +
               comTel +
               " (ficheiro clientes.tsv na pasta do projeto)";
-            render(lastRows);
+            renderMain();
+            renderSavedList();
             status.textContent = "Lista carregada de clientes.tsv.";
             loadedFromTsv = true;
             persistSavedTsv(lastTsv);
@@ -518,6 +740,7 @@
 
     restoreSavedTsv();
     loadFromRepoFiles();
+    renderSavedList();
   </script>
   <script type="module">
     import { bindSupabaseMapClientes } from "./js/supabase-sync.js";

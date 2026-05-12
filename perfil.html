@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Meu perfil · clientes contactados</title>
+  <style>
+    :root {
+      --bg: #f4f0e6;
+      --ink: #0a0a0a;
+      --accent: #ffeb3b;
+      --panel: #fff;
+      --border: 3px solid var(--ink);
+      --shadow: 6px 6px 0 var(--ink);
+      --ok: #c8e6c9;
+      --pend: #fff9c4;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.5;
+      padding: 1.25rem clamp(1rem, 4vw, 2rem) 2rem;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    h1 { font-size: clamp(1.4rem, 4vw, 2rem); margin-bottom: 0.35rem; }
+    .sub { font-size: 0.9rem; opacity: 0.9; margin-bottom: 1rem; }
+    a { color: var(--ink); font-weight: 700; }
+    .panel {
+      background: var(--panel);
+      border: var(--border);
+      box-shadow: var(--shadow);
+      padding: 1rem 1.15rem;
+      margin-bottom: 1rem;
+    }
+    label { display: block; font-weight: 700; font-size: 0.75rem; margin-bottom: 0.35rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    input[type="email"], input[type="search"] {
+      width: 100%;
+      max-width: 22rem;
+      border: var(--border);
+      padding: 0.5rem;
+      font: inherit;
+    }
+    .btn-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 0.65rem; }
+    button {
+      border: var(--border);
+      background: var(--accent);
+      color: var(--ink);
+      font-weight: 800;
+      padding: 0.55rem 0.9rem;
+      cursor: pointer;
+      box-shadow: 4px 4px 0 var(--ink);
+      font-size: 0.9rem;
+    }
+    button.secondary { background: #fff; }
+    button.danger { background: #ffcdd2; }
+    .wrap {
+      border: var(--border);
+      box-shadow: var(--shadow);
+      background: #fafafa;
+      overflow: auto;
+      max-height: min(72vh, 720px);
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+    th, td { border-bottom: 2px solid var(--ink); padding: 0.5rem 0.55rem; text-align: left; vertical-align: top; }
+    th { background: var(--accent); position: sticky; top: 0; z-index: 1; }
+    .pill { display: inline-block; padding: 0.15rem 0.45rem; font-weight: 800; font-size: 0.72rem; border: 2px solid var(--ink); }
+    .pill.pend { background: var(--pend); }
+    .pill.ok { background: var(--ok); }
+    .mini { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+    .mini button { font-size: 0.75rem; padding: 0.3rem 0.45rem; box-shadow: 2px 2px 0 var(--ink); }
+    .msg { font-size: 0.85rem; font-weight: 600; margin-top: 0.5rem; min-height: 1.2rem; }
+    #appPanel[hidden], #loginPanel[hidden] { display: none !important; }
+  </style>
+  <script src="supabase-config.js"></script>
+</head>
+<body>
+  <p class="sub"><a href="clientes.html">← Voltar a Meus clientes</a> · <a href="index.html">Ferramenta completa</a></p>
+  <h1>Meu perfil</h1>
+  <p class="sub">
+    Faz <strong>login</strong> com o mesmo email do Supabase. Aqui fica a tua lista na nuvem: <strong>cada cliente aparece uma vez</strong> (nome único).
+    <strong>Não contactado</strong> vs <strong>Já contactei</strong> para saberes quem falta.
+  </p>
+
+  <div class="panel" id="loginPanel">
+    <label for="emailIn">Email</label>
+    <input type="email" id="emailIn" autocomplete="email" placeholder="teu@email.com" />
+    <div class="btn-row">
+      <button type="button" id="btnMagic">Receber link mágico</button>
+    </div>
+    <p class="msg" id="loginMsg" aria-live="polite"></p>
+  </div>
+
+  <div class="panel" id="appPanel" hidden>
+    <p class="sub" style="margin-bottom: 0.5rem">Sessão: <strong id="whoami"></strong></p>
+    <div class="btn-row">
+      <button type="button" class="secondary" id="btnOut">Sair</button>
+      <button type="button" id="btnReload">Atualizar lista</button>
+      <button type="button" class="secondary" id="btnImportTsv">Importar tabela local (Maps)</button>
+      <button type="button" class="secondary" id="btnImportAbord">Importar lista de abordagem</button>
+    </div>
+    <label for="filterQ" style="margin-top: 0.75rem">Filtrar</label>
+    <input type="search" id="filterQ" placeholder="Nome ou telefone…" autocomplete="off" />
+    <label style="margin-top: 0.5rem; text-transform: none"><input type="checkbox" id="filterSóPend" /> Mostrar só ainda não contactados</label>
+    <p class="msg" id="appMsg" aria-live="polite"></p>
+  </div>
+
+  <div class="wrap" id="tableWrap" hidden>
+    <table>
+      <thead>
+        <tr>
+          <th>Estado</th>
+          <th>Cliente</th>
+          <th>Telefone(s)</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+  <script type="module">
+    const url = (window.SUPABASE_URL || "").trim();
+    const key = (window.SUPABASE_ANON_KEY || "").trim();
+    const loginPanel = document.getElementById("loginPanel");
+    const appPanel = document.getElementById("appPanel");
+    const loginMsg = document.getElementById("loginMsg");
+    const appMsg = document.getElementById("appMsg");
+    const emailIn = document.getElementById("emailIn");
+    const btnMagic = document.getElementById("btnMagic");
+    const btnOut = document.getElementById("btnOut");
+    const btnReload = document.getElementById("btnReload");
+    const btnImportTsv = document.getElementById("btnImportTsv");
+    const btnImportAbord = document.getElementById("btnImportAbord");
+    const whoami = document.getElementById("whoami");
+    const filterQ = document.getElementById("filterQ");
+    const filterSóPend = document.getElementById("filterSóPend");
+    const tableWrap = document.getElementById("tableWrap");
+    const tbody = document.getElementById("tbody");
+
+    const KEY_TSV = "instaTool_mapsClientesTsv";
+    const KEY_ABORD = "clientesPage_listaAbordagem";
+
+    if (!url || !key || /SEU-PROJETO|COLOCA_AQUI/i.test(url + key)) {
+      loginMsg.textContent = "Configura supabase-config.js com URL e chave anon.";
+      btnMagic.disabled = true;
+    }
+
+    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
+    const sb = createClient(url, key, {
+      auth: { persistSession: true, storage: localStorage, detectSessionInUrl: true, flowType: "pkce" },
+    });
+
+    let rowsCache = [];
+
+    function parseTsv(tsv) {
+      const lines = tsv.replace(/\r\n/g, "\n").trim().split("\n").filter(Boolean);
+      if (!lines.length) return [];
+      let start = 0;
+      if (lines[0].toLowerCase().startsWith("empresa\t") || lines[0].toLowerCase().startsWith("empresa	")) start = 1;
+      const out = [];
+      for (let i = start; i < lines.length; i++) {
+        const tab = lines[i].indexOf("\t");
+        const empresa = (tab === -1 ? lines[i] : lines[i].slice(0, tab)).trim();
+        const telRaw = tab === -1 ? "" : lines[i].slice(tab + 1).trim();
+        const phones =
+          telRaw && telRaw !== "—"
+            ? telRaw.split(/\s*;\s*/).map((x) => x.trim()).filter(Boolean)
+            : [];
+        if (empresa) out.push({ empresa, phones });
+      }
+      return out;
+    }
+
+    function sortRows(list) {
+      return [...list].sort((a, b) => {
+        const ap = a.contatado_em ? 1 : 0;
+        const bp = b.contatado_em ? 1 : 0;
+        if (ap !== bp) return ap - bp;
+        return (a.empresa || "").localeCompare(b.empresa || "", "pt");
+      });
+    }
+
+    function render() {
+      const q = (filterQ.value || "").trim().toLowerCase();
+      const sóPend = filterSóPend.checked;
+      let list = sortRows(rowsCache);
+      if (sóPend) list = list.filter((r) => !r.contatado_em);
+      if (q) {
+        list = list.filter((r) => {
+          const t = (r.telefone || "").toLowerCase();
+          return (r.empresa || "").toLowerCase().includes(q) || t.includes(q);
+        });
+      }
+      tbody.innerHTML = "";
+      if (!list.length) {
+        tableWrap.hidden = rowsCache.length === 0;
+        return;
+      }
+      tableWrap.hidden = false;
+      list.forEach((r) => {
+        const tr = document.createElement("tr");
+        const td0 = document.createElement("td");
+        const pill = document.createElement("span");
+        pill.className = "pill " + (r.contatado_em ? "ok" : "pend");
+        pill.textContent = r.contatado_em ? "Já contactei" : "Não contactado";
+        td0.appendChild(pill);
+        if (r.contatado_em) {
+          const small = document.createElement("div");
+          small.style.fontSize = "0.72rem";
+          small.style.marginTop = "0.25rem";
+          small.style.opacity = "0.85";
+          try {
+            small.textContent = new Date(r.contatado_em).toLocaleString("pt-BR");
+          } catch (_) {}
+          td0.appendChild(small);
+        }
+        const td1 = document.createElement("td");
+        td1.style.fontWeight = "700";
+        td1.textContent = r.empresa;
+        const td2 = document.createElement("td");
+        td2.style.whiteSpace = "pre-wrap";
+        td2.textContent = r.telefone && r.telefone !== "—" ? r.telefone.replace(/; /g, " · ") : "—";
+        const td3 = document.createElement("td");
+        td3.className = "mini";
+        const b1 = document.createElement("button");
+        b1.type = "button";
+        b1.textContent = "Já contactei";
+        b1.addEventListener("click", () => marcar(r.id, true));
+        const b2 = document.createElement("button");
+        b2.type = "button";
+        b2.className = "secondary";
+        b2.textContent = "Ainda não";
+        b2.addEventListener("click", () => marcar(r.id, false));
+        td3.appendChild(b1);
+        td3.appendChild(b2);
+        tr.appendChild(td0);
+        tr.appendChild(td1);
+        tr.appendChild(td2);
+        tr.appendChild(td3);
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function marcar(id, contactado) {
+      const payload = {
+        contatado_em: contactado ? new Date().toISOString() : null,
+        updated_at: new Date().toISOString(),
+      };
+      const { error } = await sb.from("map_clientes").update(payload).eq("id", id);
+      if (error) {
+        appMsg.textContent = error.message || "Erro ao atualizar.";
+        return;
+      }
+      appMsg.textContent = contactado ? "Marcado como contactado." : "Marcado como não contactado.";
+      await loadRows();
+    }
+
+    async function loadRows() {
+      appMsg.textContent = "A carregar…";
+      const { data: sess } = await sb.auth.getSession();
+      if (!sess.session) return;
+      const uid = sess.session.user.id;
+      const { data, error } = await sb
+        .from("map_clientes")
+        .select("id, empresa, telefone, contatado_em, updated_at")
+        .eq("user_id", uid);
+      if (error) {
+        appMsg.textContent = error.message || "Erro ao ler.";
+        rowsCache = [];
+        render();
+        return;
+      }
+      rowsCache = data || [];
+      appMsg.textContent = rowsCache.length + " cliente(s) no teu perfil (sem duplicar por nome).";
+      render();
+    }
+
+    async function mergeUpsert(localRows) {
+      const { data: sess } = await sb.auth.getSession();
+      if (!sess.session) {
+        appMsg.textContent = "Faz login primeiro.";
+        return;
+      }
+      const uid = sess.session.user.id;
+      if (!localRows.length) {
+        appMsg.textContent = "Nada para importar.";
+        return;
+      }
+      const { data: existing } = await sb.from("map_clientes").select("empresa, contatado_em").eq("user_id", uid);
+      const preserve = {};
+      (existing || []).forEach((r) => {
+        preserve[(r.empresa || "").trim().toLowerCase()] = r.contatado_em;
+      });
+      const payload = localRows.map((r) => {
+        const k = (r.empresa || "").trim().toLowerCase();
+        const tel = r.phones && r.phones.length ? r.phones.join("; ") : "—";
+        return {
+          user_id: uid,
+          empresa: r.empresa,
+          telefone: tel,
+          updated_at: new Date().toISOString(),
+          contatado_em: preserve[k] !== undefined ? preserve[k] : null,
+        };
+      });
+      appMsg.textContent = "A guardar " + payload.length + "…";
+      const { error } = await sb.from("map_clientes").upsert(payload, {
+        onConflict: "user_id,empresa",
+      });
+      if (error) {
+        appMsg.textContent = error.message + " — Corre supabase/schema.sql no SQL Editor (ficheiro completo).";
+        return;
+      }
+      appMsg.textContent = "Importação feita: mesclado sem apagar quem já tinhas marcado como contactado.";
+      await loadRows();
+    }
+
+    function uiSession(session) {
+      if (session) {
+        loginPanel.hidden = true;
+        appPanel.hidden = false;
+        whoami.textContent = session.user.email || session.user.id;
+        tableWrap.hidden = false;
+        loadRows();
+      } else {
+        loginPanel.hidden = false;
+        appPanel.hidden = true;
+        tableWrap.hidden = true;
+        rowsCache = [];
+        tbody.innerHTML = "";
+      }
+    }
+
+    sb.auth.onAuthStateChange((_e, session) => {
+      uiSession(session);
+    });
+
+    const { data: first } = await sb.auth.getSession();
+    uiSession(first.session);
+
+    btnMagic.addEventListener("click", async () => {
+      const email = emailIn.value.trim();
+      if (!email) {
+        loginMsg.textContent = "Escreve o email.";
+        return;
+      }
+      loginMsg.textContent = "A enviar…";
+      const redirect = window.location.href.split("#")[0];
+      const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: redirect } });
+      if (error) {
+        loginMsg.textContent = error.message || "Erro.";
+        return;
+      }
+      loginMsg.textContent = "Abre o link no email. Adiciona esta página aos Redirect URLs no Supabase.";
+    });
+
+    btnOut.addEventListener("click", async () => {
+      await sb.auth.signOut();
+      loginMsg.textContent = "Saíste.";
+    });
+
+    btnReload.addEventListener("click", () => loadRows());
+    filterQ.addEventListener("input", () => render());
+    filterSóPend.addEventListener("change", () => render());
+
+    btnImportTsv.addEventListener("click", async () => {
+      let raw = "";
+      try {
+        raw = localStorage.getItem(KEY_TSV) || "";
+      } catch (_) {}
+      if (!raw.trim()) {
+        appMsg.textContent = "Não há tabela local. Abre clientes.html, analisa a colagem, depois volta aqui.";
+        return;
+      }
+      const parsed = parseTsv(raw);
+      await mergeUpsert(parsed);
+    });
+
+    btnImportAbord.addEventListener("click", async () => {
+      let raw = "";
+      try {
+        raw = localStorage.getItem(KEY_ABORD) || "";
+      } catch (_) {}
+      let arr = [];
+      try {
+        arr = raw ? JSON.parse(raw) : [];
+      } catch (_) {
+        arr = [];
+      }
+      if (!Array.isArray(arr) || !arr.length) {
+        appMsg.textContent = "Não há lista de abordagem local. Guarda clientes em clientes.html primeiro.";
+        return;
+      }
+      const parsed = arr.map((x) => ({
+        empresa: x.empresa,
+        phones: Array.isArray(x.phones) ? x.phones : [],
+      }));
+      await mergeUpsert(parsed);
+    });
+  </script>
+</body>
+</html>
