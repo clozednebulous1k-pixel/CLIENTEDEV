@@ -117,6 +117,7 @@
     .pill-cat.estetica { background: var(--ok); }
     .pill-cat.arquitetura { background: #90caf9; }
     .pill-cat.automotiva { background: #ffcc80; }
+    .pill-cat.escritorio { background: #c5cae9; }
     .pill-cat.comercio { background: var(--pend); }
     .pill-cat.outros { background: #e8e8e8; }
     th.abord-col, td.abord-col {
@@ -196,6 +197,7 @@
       <label><input type="radio" name="perfilCat" value="estetica" /> Estética automotiva</label>
       <label><input type="radio" name="perfilCat" value="arquitetura" /> Arquitetura</label>
       <label><input type="radio" name="perfilCat" value="automotiva" /> Automotiva</label>
+      <label><input type="radio" name="perfilCat" value="escritorio" /> Escritório comercial</label>
       <label><input type="radio" name="perfilCat" value="comercio" /> Comércio</label>
       <label><input type="radio" name="perfilCat" value="outros" /> Outros</label>
     </div>
@@ -250,7 +252,7 @@
     function loadPerfilCatFiltro() {
       try {
         const v = localStorage.getItem(KEY_FILTRO_CAT);
-        if (v === "estetica" || v === "arquitetura" || v === "automotiva" || v === "comercio" || v === "outros" || v === "todos") {
+        if (v === "estetica" || v === "arquitetura" || v === "automotiva" || v === "escritorio" || v === "comercio" || v === "outros" || v === "todos") {
           document.querySelectorAll('input[name="perfilCat"]').forEach((inp) => {
             inp.checked = inp.value === v;
           });
@@ -438,9 +440,11 @@
                   ? "Arquitetura"
                   : c === "automotiva"
                     ? "Automotiva"
-                    : c === "comercio"
-                      ? "Comércio"
-                      : "Outros";
+                    : c === "escritorio"
+                      ? "Escritório comercial"
+                      : c === "comercio"
+                        ? "Comércio"
+                        : "Outros";
           nomeWrap.appendChild(pc);
         }
         td1.appendChild(nomeWrap);

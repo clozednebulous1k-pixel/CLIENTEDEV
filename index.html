@@ -219,6 +219,7 @@
     .maps-pill-cat.estetica { background: #c8e6c9; }
     .maps-pill-cat.arquitetura { background: #bbdefb; }
     .maps-pill-cat.automotiva { background: #ffe0b2; }
+    .maps-pill-cat.escritorio { background: #c5cae9; }
     .maps-pill-cat.comercio { background: #fff9c4; }
     .maps-pill-cat.outros { background: #e8e8e8; }
     .maps-clientes-title {
@@ -341,6 +342,7 @@
       <label><input type="radio" name="mapsCatFiltro" value="estetica" /> Estética automotiva</label>
       <label><input type="radio" name="mapsCatFiltro" value="arquitetura" /> Arquitetura</label>
       <label><input type="radio" name="mapsCatFiltro" value="automotiva" /> Automotiva</label>
+      <label><input type="radio" name="mapsCatFiltro" value="escritorio" /> Escritório comercial</label>
       <label><input type="radio" name="mapsCatFiltro" value="comercio" /> Comércio</label>
       <label><input type="radio" name="mapsCatFiltro" value="outros" /> Outros</label>
     </div>
@@ -696,7 +698,7 @@ parceiro_som
     function loadMapsCatFiltroFromStorage() {
       try {
         const v = localStorage.getItem(STORAGE.mapsCatFiltro);
-        if (v === "estetica" || v === "arquitetura" || v === "automotiva" || v === "comercio" || v === "outros" || v === "todos") mapsCatFiltro = v;
+        if (v === "estetica" || v === "arquitetura" || v === "automotiva" || v === "escritorio" || v === "comercio" || v === "outros" || v === "todos") mapsCatFiltro = v;
       } catch (_) {}
       syncMapsCatRadios();
     }
@@ -731,9 +733,13 @@ parceiro_som
               ? "Estética"
               : cat === "arquitetura"
                 ? "Arquitetura"
-                : cat === "comercio"
-                  ? "Comércio"
-                  : "Outros";
+                : cat === "automotiva"
+                  ? "Automotiva"
+                  : cat === "escritorio"
+                    ? "Escritório comercial"
+                    : cat === "comercio"
+                      ? "Comércio"
+                      : "Outros";
         wrap.appendChild(pill);
       }
       td.appendChild(wrap);
@@ -751,7 +757,7 @@ parceiro_som
       const cnt =
         typeof contarClientesPorCategoria === "function"
           ? contarClientesPorCategoria(lastMapsRows)
-          : { estetica: 0, arquitetura: 0, automotiva: 0, comercio: 0, outros: 0 };
+          : { estetica: 0, arquitetura: 0, automotiva: 0, escritorio: 0, comercio: 0, outros: 0 };
       mapsSummary.textContent =
         (mapsCatFiltro !== "todos" ? "Visíveis: " + view.length + " de " + lastMapsRows.length + " · " : "") +
         "Blocos: " +
@@ -762,6 +768,8 @@ parceiro_som
         cnt.arquitetura +
         ", automotiva " +
         cnt.automotiva +
+        ", escritório comercial " +
+        cnt.escritorio +
         ", comércio " +
         cnt.comercio +
         ", outros " +

@@ -1,5 +1,5 @@
 /**
- * Frases de abordagem (variação por hash; estética, automotiva e arquitetura incluem links de portfólio).
+ * Frases de abordagem (variação por hash; estética, automotiva e arquitetura incluem links de portfólio; escritório comercial tem tom B2B).
  * Tom: convite e valor: sem falar do negócio específico do destinatário nem supor dores
  * (“perdem tempo”, “não encaixa”, etc.). O nome da empresa só influencia hash/segmento, não o texto.
  */
@@ -71,6 +71,13 @@ function segmento(empresa, tipoMaps) {
   if (/roupa|vestuário|vestuario|biju|acess[oó]ri|moda/i.test(e)) return "moda";
   if (/construção|construcao|materiais|ferrag|madeira|gesso|obra/i.test(e)) return "obra";
   if (/máquina|maquina|equipamento|industrial|peças|pecas/i.test(e)) return "maquinas";
+  if (
+    /escritório\s+comercial|escritorio\s+comercial|escritório\s+de\s+advoc|escritorio\s+de\s+advoc|escritório\s+contábil|escritorio\s+contabil|escritório\s+de\s+contab|contabilidade\b|\bcontadores?\b|\bcontadora\b|escritório\s+de\s+contadores|advocacia|\badvogad|escritório\s+jur[ií]dic|assessoria\s+empresarial|consultoria\s+empresarial|consultoria\s+em\s+gest(ão|ao)|consultoria\s+contábil|consultoria\s+contabil|corretora\s+de\s+seguros|corretor\s+de\s+seguros|\bdespachante\b/i.test(
+      e
+    )
+  ) {
+    return "escritorio_comercial";
+  }
   if (/comércio|comercio|loja|varejo|mercado|bazar/i.test(e)) return "comercio";
   return "geral";
 }
@@ -79,29 +86,31 @@ function segmento(empresa, tipoMaps) {
  * Categoria grossa para filtros na UI (alinhado ao segmento interno).
  * @param {string} empresa
  * @param {string} [tipoMaps] texto do Maps após a avaliação (ex.: «Estética automotiva»).
- * @returns {"estetica"|"arquitetura"|"automotiva"|"comercio"|"outros"}
+ * @returns {"estetica"|"arquitetura"|"automotiva"|"escritorio"|"comercio"|"outros"}
  */
 function filtroCategoriaCliente(empresa, tipoMaps) {
   const s = segmento(empresa, tipoMaps);
   if (s === "estetica_auto") return "estetica";
   if (s === "arquitetura") return "arquitetura";
   if (s === "automotiva") return "automotiva";
+  if (s === "escritorio_comercial") return "escritorio";
   if (s === "comercio") return "comercio";
   return "outros";
 }
 
 /**
  * @param {{ empresa: string, tipoMaps?: string }[]} rows
- * @returns {{ estetica: number, arquitetura: number, automotiva: number, comercio: number, outros: number }}
+ * @returns {{ estetica: number, arquitetura: number, automotiva: number, escritorio: number, comercio: number, outros: number }}
  */
 function contarClientesPorCategoria(rows) {
-  const o = { estetica: 0, arquitetura: 0, automotiva: 0, comercio: 0, outros: 0 };
+  const o = { estetica: 0, arquitetura: 0, automotiva: 0, escritorio: 0, comercio: 0, outros: 0 };
   if (!rows || !rows.length) return o;
   for (const r of rows) {
     const c = filtroCategoriaCliente(r.empresa, r.tipoMaps);
     if (c === "estetica") o.estetica++;
     else if (c === "arquitetura") o.arquitetura++;
     else if (c === "automotiva") o.automotiva++;
+    else if (c === "escritorio") o.escritorio++;
     else if (c === "comercio") o.comercio++;
     else o.outros++;
   }
@@ -131,6 +140,8 @@ function gerarFraseAbordagem(empresa, rowIndex, tipoMaps) {
 
   const introAutomotiva = `Olá, meu nome é ${VENDEDOR} (${VENDEDOR_INSTAGRAM} no Instagram). Faço sites sob medida para oficinas, autopeças, pneus, mecânica e outros serviços ligados a veículos. Para verem ritmo e apresentação num caso publicado neste universo: ${SITE_LINEA_MOTOR} (Linea Motor). Horários, serviços, WhatsApp e contacto claros no telemóvel.`;
 
+  const introEscritorioComercial = `Olá, meu nome é ${VENDEDOR} (${VENDEDOR_INSTAGRAM} no Instagram). Faço sites sob medida para escritórios e serviços B2B: contabilidade, advocacia, consultoria, corretagem e equipas pequenas que precisam de presença online séria — áreas de atuação, equipa, formulários e contacto claros, com leitura confortável no telemóvel.`;
+
   const intro =
     seg === "estetica_auto"
       ? introEstetica
@@ -138,7 +149,9 @@ function gerarFraseAbordagem(empresa, rowIndex, tipoMaps) {
         ? introArquitetura
         : seg === "automotiva"
           ? introAutomotiva
-          : introGeral;
+          : seg === "escritorio_comercial"
+            ? introEscritorioComercial
+            : introGeral;
 
   const corposGeral = [
     `Seria possível marcarem uma conversa curta, sem compromisso, só para ver se faz sentido falarmos num site ou num software alinhado ao que imaginam?`,
@@ -180,11 +193,20 @@ function gerarFraseAbordagem(empresa, rowIndex, tipoMaps) {
     `Fico à disposição para explicar prazos e etapas. Para inspiração no tom do site: ${SITE_LINEA_MOTOR}.`,
   ];
 
+  const corposEscritorioComercial = [
+    `Se fizer sentido, combino uma chamada curta para perceber que secções fariam mais diferença no ar: serviços, equipa, publicações, formulário de contacto ou marcação. Entrego em fases, com protótipo cedo e revisões ao longo do projeto.`,
+    `Posso estruturar páginas por área de prática ou por tipo de cliente, com textos claros e hierarquia fácil de ler no telemóvel — sem depender de template genérico que não reflete o tom do escritório.`,
+    `Também consigo integrar WhatsApp, mapa e links úteis (OAB, CRC, redes) de forma organizada, para quem chega pelo Google ou por indicação encontrar logo o que precisa.`,
+    `Trabalho com margem para afinar conteúdo e detalhes até o site ficar confortável para quem responde contactos no dia a dia. Se quiserem explorar sem compromisso, envio disponibilidade ou respondo por aqui.`,
+    `Resumo do meu lado: escuta, proposta alinhada ao que combinarmos, e código organizado para poderem evoluir com calma. Fico à disposição para uma primeira conversa.`,
+  ];
+
   const pools = {
     geral: corposGeral,
     estetica_auto: corposEstetica.concat(corposGeral),
     arquitetura: corposArquitetura.concat(corposGeral),
     automotiva: corposAutomotiva.concat(corposGeral),
+    escritorio_comercial: corposEscritorioComercial.concat(corposGeral),
     comercio: corposGeral,
     industria: corposGeral,
     tech: corposGeral,
@@ -216,6 +238,7 @@ function labelCategoriaCliente(cat) {
   if (cat === "estetica") return "Estética";
   if (cat === "arquitetura") return "Arquitetura";
   if (cat === "automotiva") return "Automotiva";
+  if (cat === "escritorio") return "Escritório comercial";
   if (cat === "comercio") return "Comércio";
   return "Outros";
 }
@@ -230,6 +253,8 @@ function resumoContagemCategorias(c) {
     (c.arquitetura ?? 0) +
     ", automotiva " +
     (c.automotiva ?? 0) +
+    ", escritório comercial " +
+    (c.escritorio ?? 0) +
     ", comércio " +
     (c.comercio ?? 0) +
     ", outros " +

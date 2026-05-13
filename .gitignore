@@ -4,6 +4,7 @@ clientes.tsv
 clientes-estetica.tsv
 clientes-arquitetura.tsv
 clientes-automotiva.tsv
+clientes-escritorio.tsv
 
 # Python
 __pycache__/
