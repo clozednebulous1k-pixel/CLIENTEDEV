@@ -56,6 +56,13 @@ function segmento(empresa, tipoMaps) {
   ) {
     return "arquitetura";
   }
+  if (
+    /oficina\s+mec|oficina\s+automot|auto\s*mec|mec[aâ]nica\s+automot|borracharia|alinhamento|balanceamento|geometria|auto[- ]?pe[cç]as|autope[cç]as|pe[cç]as\s+automot|loja\s+de\s+autope[cç]|concession|revenda\s+de\s+ve[ií]cul|venda\s+de\s+ve[ií]cul|troca\s+de\s+[oó]leo|lubrifica[cç][aã]o\s+automot|inspe[cç][aã]o\s+veicular|vistoria\s+veicular|guincho|funilaria|lava[- ]?r[aá]pido|auto\s*center|centro\s+automot|reparo\s+automot|servi[cç]o\s+automot|som\s+automot|acess[oó]rios\s+para\s+ve[ií]cul|acess[oó]rios\s+automot|\bpneu|loja\s+de\s+pneu|blindagem|martelinho|ar\s+condicionado\s+automot/i.test(
+      e
+    )
+  ) {
+    return "automotiva";
+  }
   if (/posto|combust|gasolina|diesel|abastec/i.test(e)) return "posto";
   if (/farmácia|farmacia|drogaria|medicament|perfum/i.test(e)) return "farmacia";
   if (/restaurante|lanchonete|pizz|bar |acougue|açougue|padaria/i.test(e)) return "food";
@@ -72,27 +79,29 @@ function segmento(empresa, tipoMaps) {
  * Categoria grossa para filtros na UI (alinhado ao segmento interno).
  * @param {string} empresa
  * @param {string} [tipoMaps] texto do Maps após a avaliação (ex.: «Estética automotiva»).
- * @returns {"estetica"|"arquitetura"|"comercio"|"outros"}
+ * @returns {"estetica"|"arquitetura"|"automotiva"|"comercio"|"outros"}
  */
 function filtroCategoriaCliente(empresa, tipoMaps) {
   const s = segmento(empresa, tipoMaps);
   if (s === "estetica_auto") return "estetica";
   if (s === "arquitetura") return "arquitetura";
+  if (s === "automotiva") return "automotiva";
   if (s === "comercio") return "comercio";
   return "outros";
 }
 
 /**
  * @param {{ empresa: string, tipoMaps?: string }[]} rows
- * @returns {{ estetica: number, arquitetura: number, comercio: number, outros: number }}
+ * @returns {{ estetica: number, arquitetura: number, automotiva: number, comercio: number, outros: number }}
  */
 function contarClientesPorCategoria(rows) {
-  const o = { estetica: 0, arquitetura: 0, comercio: 0, outros: 0 };
+  const o = { estetica: 0, arquitetura: 0, automotiva: 0, comercio: 0, outros: 0 };
   if (!rows || !rows.length) return o;
   for (const r of rows) {
     const c = filtroCategoriaCliente(r.empresa, r.tipoMaps);
     if (c === "estetica") o.estetica++;
     else if (c === "arquitetura") o.arquitetura++;
+    else if (c === "automotiva") o.automotiva++;
     else if (c === "comercio") o.comercio++;
     else o.outros++;
   }
@@ -120,8 +129,16 @@ function gerarFraseAbordagem(empresa, rowIndex, tipoMaps) {
 
   const introArquitetura = `Olá, meu nome é ${VENDEDOR} (${VENDEDOR_INSTAGRAM} no Instagram). Faço sites sob medida para gabinetes de arquitetura, paisagismo e design de interiores. Há um exemplo publicado de um projeto que desenvolvi para uma arquiteta: ${SITE_PORTFOLIO_ARQUITETURA} (Marina Schaffman, São Paulo).`;
 
+  const introAutomotiva = `Olá, meu nome é ${VENDEDOR} (${VENDEDOR_INSTAGRAM} no Instagram). Faço sites sob medida para oficinas, autopeças, pneus, mecânica e outros serviços ligados a veículos: horários, serviços, WhatsApp e contacto claros no telemóvel.`;
+
   const intro =
-    seg === "estetica_auto" ? introEstetica : seg === "arquitetura" ? introArquitetura : introGeral;
+    seg === "estetica_auto"
+      ? introEstetica
+      : seg === "arquitetura"
+        ? introArquitetura
+        : seg === "automotiva"
+          ? introAutomotiva
+          : introGeral;
 
   const corposGeral = [
     `Seria possível marcarem uma conversa curta, sem compromisso, só para ver se faz sentido falarmos num site ou num software alinhado ao que imaginam?`,
@@ -155,10 +172,19 @@ function gerarFraseAbordagem(empresa, rowIndex, tipoMaps) {
     `Fico à disposição para mostrar referências e explicar o processo. Podem navegar em ${SITE_PORTFOLIO_ARQUITETURA} e, se o tom servir de base, falamos no que adaptaríamos ao vosso gabinete.`,
   ];
 
+  const corposAutomotiva = [
+    `Posso montar uma página com lista de serviços, marca, morada e botão de WhatsApp, pensada para quem procura oficina ou peças no telemóvel. Se fizer sentido, combinamos uma chamada curta.`,
+    `Também consigo organizar secções por tipo de serviço (mecânica, elétrica, pneus, revisão) e atualizar com calma à medida que mudam preços ou promoções.`,
+    `Trabalho em fases com protótipo cedo, para validarem textos e fotos antes de publicar. O objetivo é um site direto, sem ruído, que leve o cliente ao contacto.`,
+    `Se quiserem explorar sem compromisso, envio disponibilidade ou respondo por aqui com ideias de estrutura para o vosso caso.`,
+    `Fico à disposição para explicar como costumo entregar (prazos, o que entra em cada etapa) e que tipo de resultado costumo preparar para este tipo de negócio.`,
+  ];
+
   const pools = {
     geral: corposGeral,
     estetica_auto: corposEstetica.concat(corposGeral),
     arquitetura: corposArquitetura.concat(corposGeral),
+    automotiva: corposAutomotiva.concat(corposGeral),
     comercio: corposGeral,
     industria: corposGeral,
     tech: corposGeral,
@@ -186,6 +212,7 @@ function gerarFraseAbordagem(empresa, rowIndex, tipoMaps) {
 function labelCategoriaCliente(cat) {
   if (cat === "estetica") return "Estética";
   if (cat === "arquitetura") return "Arquitetura";
+  if (cat === "automotiva") return "Automotiva";
   if (cat === "comercio") return "Comércio";
   return "Outros";
 }
@@ -198,6 +225,8 @@ function resumoContagemCategorias(c) {
     (c.estetica ?? 0) +
     ", arquitetura " +
     (c.arquitetura ?? 0) +
+    ", automotiva " +
+    (c.automotiva ?? 0) +
     ", comércio " +
     (c.comercio ?? 0) +
     ", outros " +

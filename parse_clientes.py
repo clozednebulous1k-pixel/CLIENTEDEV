@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 """
 Lê uma colagem do Google Maps (com linhas 'Rotas') e gera:
-  - clientes.tsv — linhas que não são estética automotiva nem arquitetura (pelo nome + tipo Maps)
-  - clientes-estetica.tsv — só estética automotiva
-  - clientes-arquitetura.tsv — só arquitetura / design de interiores / paisagismo (critério alinhado ao JS)
+  - clientes.tsv — linhas que não caem nas categorias abaixo (pelo nome + tipo Maps)
+  - clientes-estetica.tsv — só estética automotiva / detailing
+  - clientes-arquitetura.tsv — só arquitetura / design de interiores / paisagismo
+  - clientes-automotiva.tsv — oficina, autopeças, pneus, mecânica, etc. (alinhado ao JS)
 
 Colunas: empresa | telefone | tipo (categoria do Maps, quando detectada)
 
@@ -60,6 +61,21 @@ ARQUITETURA_RE = re.compile(
     re.I,
 )
 
+AUTOMOTIVA_RE = re.compile(
+    r"oficina\s+mec|oficina\s+automot|auto\s*mec|mec[aâ]nica\s+automot|"
+    r"borracharia|alinhamento|balanceamento|geometria|"
+    r"auto[- ]?pe[cç]as|autope[cç]as|pe[cç]as\s+automot|loja\s+de\s+autope[cç]|"
+    r"concession|revenda\s+de\s+ve[ií]cul|venda\s+de\s+ve[ií]cul|"
+    r"troca\s+de\s+[oó]leo|lubrifica[cç][aã]o\s+automot|"
+    r"inspe[cç][aã]o\s+veicular|vistoria\s+veicular|guincho|funilaria|"
+    r"lava[- ]?r[aá]pido|auto\s*center|centro\s+automot|"
+    r"reparo\s+automot|servi[cç]o\s+automot|som\s+automot|"
+    r"acess[oó]rios\s+para\s+ve[ií]cul|acess[oó]rios\s+automot|"
+    r"\bpneu|loja\s+de\s+pneu|blindagem|martelinho|"
+    r"ar\s+condicionado\s+automot",
+    re.I,
+)
+
 
 def is_estetica_row(empresa: str, tipo_maps: str) -> bool:
     blob = f"{empresa or ''} {tipo_maps or ''}".lower()
@@ -71,11 +87,18 @@ def is_arquitetura_row(empresa: str, tipo_maps: str) -> bool:
     return bool(ARQUITETURA_RE.search(blob))
 
 
+def is_automotiva_row(empresa: str, tipo_maps: str) -> bool:
+    blob = f"{empresa or ''} {tipo_maps or ''}".lower()
+    return bool(AUTOMOTIVA_RE.search(blob))
+
+
 def row_bucket(empresa: str, tipo_maps: str) -> str:
     if is_estetica_row(empresa, tipo_maps):
         return "e"
     if is_arquitetura_row(empresa, tipo_maps):
         return "a"
+    if is_automotiva_row(empresa, tipo_maps):
+        return "m"
     return "o"
 
 
@@ -170,6 +193,7 @@ def main():
     out_main = base / "clientes.tsv"
     out_est = base / "clientes-estetica.tsv"
     out_arq = base / "clientes-arquitetura.tsv"
+    out_auto = base / "clientes-automotiva.tsv"
 
     if not in_path.is_file():
         print(f"Ficheiro não encontrado: {in_path}", file=sys.stderr)
@@ -181,6 +205,7 @@ def main():
 
     estetica = []
     arquitetura = []
+    automotiva = []
     resto = []
     for r in rows:
         n, p, t = r
@@ -189,6 +214,8 @@ def main():
             estetica.append(r)
         elif b == "a":
             arquitetura.append(r)
+        elif b == "m":
+            automotiva.append(r)
         else:
             resto.append(r)
 
@@ -205,17 +232,23 @@ def main():
         header + "\n".join(tsv_line(n, p, t) for n, p, t in arquitetura) + "\n",
         encoding="utf-8",
     )
+    out_auto.write_text(
+        header + "\n".join(tsv_line(n, p, t) for n, p, t in automotiva) + "\n",
+        encoding="utf-8",
+    )
 
     try:
         sys.stdout.reconfigure(encoding="utf-8")
     except Exception:
         pass
     print(
-        f"Total: {len(rows)} · Estética: {len(estetica)} · Arquitetura: {len(arquitetura)} · Restantes: {len(resto)}"
+        f"Total: {len(rows)} · Estética: {len(estetica)} · Arquitetura: {len(arquitetura)} · "
+        f"Automotiva: {len(automotiva)} · Restantes: {len(resto)}"
     )
     print(f"Gravado: {out_main}")
     print(f"Gravado: {out_est}")
     print(f"Gravado: {out_arq}")
+    print(f"Gravado: {out_auto}")
 
 
 if __name__ == "__main__":

@@ -3,6 +3,7 @@ colagem.txt
 clientes.tsv
 clientes-estetica.tsv
 clientes-arquitetura.tsv
+clientes-automotiva.tsv
 
 # Python
 __pycache__/

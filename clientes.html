@@ -139,6 +139,7 @@
     }
     .pill-cat.estetica { background: #c8e6c9; }
     .pill-cat.arquitetura { background: #bbdefb; }
+    .pill-cat.automotiva { background: #ffe0b2; }
     .pill-cat.comercio { background: #fff9c4; }
     .pill-cat.outros { background: #e0e0e0; }
     .cloud-msg { font-size: 0.82rem; font-weight: 600; margin-top: 0.5rem; min-height: 1.25rem; }
@@ -177,7 +178,7 @@
     <strong>rodar.bat</strong> / servidor local na pasta do projeto, ou confirma no deploy (Vercel) que a pasta
     <code>js</code> foi enviada com o site.
   </p>
-  <p class="sub">A lista fica <strong>guardada neste browser</strong> depois de analisares (memória local do site). Com <strong>rodar.bat</strong> também podes carregar <code>clientes.tsv</code> + <code>clientes-estetica.tsv</code> + <code>clientes-arquitetura.tsv</code> (gerados por <code>python parse_clientes.py</code>) e <code>colagem.txt</code> da pasta. Opcional: <strong>Supabase</strong> para a mesma lista noutro PC. A coluna <strong>Abordagem</strong> usa <code>gerarFraseAbordagem</code> (nome + categoria do Maps quando existir + hash estável): estética automotiva inclui <a href="https://estetica-auto-xi.vercel.app/" target="_blank" rel="noopener">estetica-auto-xi.vercel.app</a>; arquitetura inclui <a href="https://marina-shaffman.vercel.app/" target="_blank" rel="noopener">marina-shaffman.vercel.app</a>. <strong>Guardar</strong> grava a mesma frase na lista em baixo.</p>
+  <p class="sub">A lista fica <strong>guardada neste browser</strong> depois de analisares (memória local do site). Com <strong>rodar.bat</strong> também podes carregar <code>clientes.tsv</code> + <code>clientes-estetica.tsv</code> + <code>clientes-arquitetura.tsv</code> + <code>clientes-automotiva.tsv</code> (gerados por <code>python parse_clientes.py</code>) e <code>colagem.txt</code> da pasta. Opcional: <strong>Supabase</strong> para a mesma lista noutro PC. A coluna <strong>Abordagem</strong> usa <code>gerarFraseAbordagem</code> (nome + categoria do Maps quando existir + hash estável): estética automotiva inclui <a href="https://estetica-auto-xi.vercel.app/" target="_blank" rel="noopener">estetica-auto-xi.vercel.app</a>; arquitetura inclui <a href="https://marina-shaffman.vercel.app/" target="_blank" rel="noopener">marina-shaffman.vercel.app</a>. <strong>Guardar</strong> grava a mesma frase na lista em baixo.</p>
 
   <div class="panel" id="sbCloudPanel">
     <label>Nuvem (Supabase)</label>
@@ -224,6 +225,7 @@
       <label><input type="radio" name="catCliente" value="todos" checked /> Todos</label>
       <label><input type="radio" name="catCliente" value="estetica" /> Estética automotiva</label>
       <label><input type="radio" name="catCliente" value="arquitetura" /> Arquitetura</label>
+      <label><input type="radio" name="catCliente" value="automotiva" /> Automotiva</label>
       <label><input type="radio" name="catCliente" value="comercio" /> Comércio</label>
       <label><input type="radio" name="catCliente" value="outros" /> Outros</label>
     </div>
@@ -243,7 +245,7 @@
   </div>
 
   <h2 class="section-title" id="tituloListaGuardada" hidden>Lista guardada para abordagem</h2>
-  <p class="sub" id="hintListaGuardada" hidden style="margin-top: -0.25rem">Frases geradas por <code>js/abordagem-frases.js</code>. O filtro <strong>Categoria</strong> (estética / arquitetura / comércio / outros) combina nome da empresa e tipo do Maps quando existir. Usa <strong>Guardar</strong> depois de filtrar.</p>
+  <p class="sub" id="hintListaGuardada" hidden style="margin-top: -0.25rem">Frases geradas por <code>js/abordagem-frases.js</code>. O filtro <strong>Categoria</strong> (estética / arquitetura / automotiva / comércio / outros) combina nome da empresa e tipo do Maps quando existir. Usa <strong>Guardar</strong> depois de filtrar.</p>
   <div class="wrap" id="savedWrap" hidden>
     <table>
       <thead>
@@ -316,7 +318,7 @@
     function loadCatFiltroFromStorage() {
       try {
         const v = localStorage.getItem(KEY_FILTRO_CAT);
-        if (v === "estetica" || v === "arquitetura" || v === "comercio" || v === "outros" || v === "todos") {
+        if (v === "estetica" || v === "arquitetura" || v === "automotiva" || v === "comercio" || v === "outros" || v === "todos") {
           document.querySelectorAll('input[name="catCliente"]').forEach((inp) => {
             inp.checked = inp.value === v;
           });
@@ -602,7 +604,7 @@
       }
       if (vis === 0) {
         statusFiltro.textContent =
-          "Nenhum cliente corresponde aos filtros (texto/número ou categoria). Se estiveres em «Estética», «Arquitetura» ou «Comércio» e a lista sumiu, escolhe «Todos».";
+          "Nenhum cliente corresponde aos filtros (texto/número ou categoria). Se estiveres em «Estética», «Arquitetura», «Automotiva» ou «Comércio» e a lista sumiu, escolhe «Todos».";
         return;
       }
       rows.forEach((r, i) => {
@@ -633,9 +635,11 @@
                 ? "Estética"
                 : cat === "arquitetura"
                   ? "Arquitetura"
-                  : cat === "comercio"
-                    ? "Comércio"
-                    : "Outros";
+                  : cat === "automotiva"
+                    ? "Automotiva"
+                    : cat === "comercio"
+                      ? "Comércio"
+                      : "Outros";
           nomeWrap.appendChild(pill);
         }
         nomeTd.appendChild(nomeWrap);
@@ -724,9 +728,11 @@
                 ? "Estética"
                 : cat === "arquitetura"
                   ? "Arquitetura"
-                  : cat === "comercio"
-                    ? "Comércio"
-                    : "Outros";
+                  : cat === "automotiva"
+                    ? "Automotiva"
+                    : cat === "comercio"
+                      ? "Comércio"
+                      : "Outros";
           nomeWrap.appendChild(pill);
         }
         t1.appendChild(nomeWrap);
@@ -977,7 +983,7 @@
     async function loadFromRepoFiles() {
       let loadedFromTsv = false;
       const merged = [];
-      for (const fname of ["clientes.tsv", "clientes-estetica.tsv", "clientes-arquitetura.tsv"]) {
+      for (const fname of ["clientes.tsv", "clientes-estetica.tsv", "clientes-arquitetura.tsv", "clientes-automotiva.tsv"]) {
         try {
           const r = await fetch(fname, { cache: "no-store" });
           if (!r.ok) continue;
@@ -1003,7 +1009,7 @@
           lastRows.length +
           " · Com telefone: " +
           comTel +
-          " (ficheiros clientes.tsv + clientes-estetica.tsv + clientes-arquitetura.tsv na pasta do projeto)" +
+          " (ficheiros clientes.tsv + clientes-estetica.tsv + clientes-arquitetura.tsv + clientes-automotiva.tsv na pasta do projeto)" +
           (c && typeof resumoContagemCategorias === "function" ? resumoContagemCategorias(c) : "");
         renderMain();
         renderSavedList();
@@ -1038,7 +1044,7 @@
 
       if (!loadedFromTsv && !lastRows.length && !paste.value.trim()) {
         status.textContent =
-          "Cola o texto do Maps e clica em Analisar, ou usa rodar-parse.bat (gera os três TSV) / colagem.txt na pasta.";
+          "Cola o texto do Maps e clica em Analisar, ou usa rodar-parse.bat (gera os quatro TSV) / colagem.txt na pasta.";
       }
     }
 
