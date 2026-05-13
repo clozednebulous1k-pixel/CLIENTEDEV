@@ -1,5 +1,5 @@
 /**
- * Frases de abordagem (variação por hash; estética e arquitetura incluem links de portfólio).
+ * Frases de abordagem (variação por hash; estética, automotiva e arquitetura incluem links de portfólio).
  * Tom: convite e valor: sem falar do negócio específico do destinatário nem supor dores
  * (“perdem tempo”, “não encaixa”, etc.). O nome da empresa só influencia hash/segmento, não o texto.
  */
@@ -129,7 +129,7 @@ function gerarFraseAbordagem(empresa, rowIndex, tipoMaps) {
 
   const introArquitetura = `Olá, meu nome é ${VENDEDOR} (${VENDEDOR_INSTAGRAM} no Instagram). Faço sites sob medida para gabinetes de arquitetura, paisagismo e design de interiores. Há um exemplo publicado de um projeto que desenvolvi para uma arquiteta: ${SITE_PORTFOLIO_ARQUITETURA} (Marina Schaffman, São Paulo).`;
 
-  const introAutomotiva = `Olá, meu nome é ${VENDEDOR} (${VENDEDOR_INSTAGRAM} no Instagram). Faço sites sob medida para oficinas, autopeças, pneus, mecânica e outros serviços ligados a veículos: horários, serviços, WhatsApp e contacto claros no telemóvel.`;
+  const introAutomotiva = `Olá, meu nome é ${VENDEDOR} (${VENDEDOR_INSTAGRAM} no Instagram). Faço sites sob medida para oficinas, autopeças, pneus, mecânica e outros serviços ligados a veículos. Para verem ritmo e apresentação num caso publicado neste universo: ${SITE_LINEA_MOTOR} (Linea Motor). Horários, serviços, WhatsApp e contacto claros no telemóvel.`;
 
   const intro =
     seg === "estetica_auto"
@@ -173,11 +173,11 @@ function gerarFraseAbordagem(empresa, rowIndex, tipoMaps) {
   ];
 
   const corposAutomotiva = [
-    `Posso montar uma página com lista de serviços, marca, morada e botão de WhatsApp, pensada para quem procura oficina ou peças no telemóvel. Se fizer sentido, combinamos uma chamada curta.`,
-    `Também consigo organizar secções por tipo de serviço (mecânica, elétrica, pneus, revisão) e atualizar com calma à medida que mudam preços ou promoções.`,
-    `Trabalho em fases com protótipo cedo, para validarem textos e fotos antes de publicar. O objetivo é um site direto, sem ruído, que leve o cliente ao contacto.`,
-    `Se quiserem explorar sem compromisso, envio disponibilidade ou respondo por aqui com ideias de estrutura para o vosso caso.`,
-    `Fico à disposição para explicar como costumo entregar (prazos, o que entra em cada etapa) e que tipo de resultado costumo preparar para este tipo de negócio.`,
+    `Posso montar uma página com lista de serviços, marca, morada e botão de WhatsApp, pensada para quem procura oficina ou peças no telemóvel. O link acima (${SITE_LINEA_MOTOR}) mostra o tipo de navegação e clareza que costumo buscar em projetos automotivos.`,
+    `Também consigo organizar secções por tipo de serviço (mecânica, elétrica, pneus, revisão) e atualizar com calma. Referência visual publicada: ${SITE_LINEA_MOTOR}.`,
+    `Trabalho em fases com protótipo cedo, para validarem textos e fotos antes de publicar. Podem ver o exemplo Linea Motor em ${SITE_LINEA_MOTOR} e imaginar a estrutura adaptada ao vosso negócio.`,
+    `Se quiserem explorar sem compromisso, envio disponibilidade ou respondo por aqui. O site de exemplo continua em ${SITE_LINEA_MOTOR}.`,
+    `Fico à disposição para explicar prazos e etapas. Para inspiração no tom do site: ${SITE_LINEA_MOTOR}.`,
   ];
 
   const pools = {
@@ -201,6 +201,9 @@ function gerarFraseAbordagem(empresa, rowIndex, tipoMaps) {
   let out = intro + " " + corpo;
   if (seg === "estetica_auto" && !out.includes("estetica-auto-xi.vercel.app")) {
     out += " Exemplo neste segmento: " + SITE_LINEA_MOTOR;
+  }
+  if (seg === "automotiva" && !out.includes("estetica-auto-xi.vercel.app")) {
+    out += " Exemplo de site (universo automotivo): " + SITE_LINEA_MOTOR;
   }
   if (seg === "arquitetura" && !out.includes("marina-shaffman.vercel.app")) {
     out += " Referência de portfólio (arquitetura): " + SITE_PORTFOLIO_ARQUITETURA;
