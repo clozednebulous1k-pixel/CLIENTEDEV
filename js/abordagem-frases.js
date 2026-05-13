@@ -132,15 +132,15 @@ function gerarFraseAbordagem(empresa, rowIndex, tipoMaps) {
   const idx =
     typeof rowIndex === "number" && Number.isFinite(rowIndex) ? rowIndex : hashStr(chave.toLowerCase());
   const h = hashStr(chave) + idx * 17 + seg.length * 31;
-  const introGeral = `Olá, meu nome é ${VENDEDOR} (${VENDEDOR_INSTAGRAM} no Instagram). Faço sites e software sob medida: o foco é impulsionar resultados com digital feito à maneira de quem me contrata. Ouço a ideia, desenho em conjunto e entrego do jeito que combinarmos, com margem para ir afinando até ficar redondo.`;
+  const introGeral = `Olá, meu nome é ${VENDEDOR} (${VENDEDOR_INSTAGRAM} no Instagram). Faço sites e software sob medida, com foco em resultado no digital do jeito de quem contrata. Ouço a ideia, monto junto com vocês e entrego como combinado, com espaço pra ir afinando até ficar redondo.`;
 
-  const introEstetica = `Olá, meu nome é ${VENDEDOR} (${VENDEDOR_INSTAGRAM} no Instagram). Trabalho com sites sob medida para estética automotiva e detailing. Há um exemplo online para verem o ritmo e o visual: ${SITE_LINEA_MOTOR} (projeto Linea Motor).`;
+  const introEstetica = `Olá, meu nome é ${VENDEDOR} (${VENDEDOR_INSTAGRAM} no Instagram). Trabalho com sites sob medida pra estética automotiva e detailing. Tem um exemplo online pra vocês verem o ritmo e o visual: ${SITE_LINEA_MOTOR} (projeto Linea Motor).`;
 
-  const introArquitetura = `Olá, meu nome é ${VENDEDOR} (${VENDEDOR_INSTAGRAM} no Instagram). Faço sites sob medida para gabinetes de arquitetura, paisagismo e design de interiores. Há um exemplo publicado de um projeto que desenvolvi para uma arquiteta: ${SITE_PORTFOLIO_ARQUITETURA} (Marina Schaffman, São Paulo).`;
+  const introArquitetura = `Olá, meu nome é ${VENDEDOR} (${VENDEDOR_INSTAGRAM} no Instagram). Faço sites sob medida pra escritórios de arquitetura, paisagismo e design de interiores. Tem exemplo publicado de um projeto que fiz pra uma arquiteta: ${SITE_PORTFOLIO_ARQUITETURA} (Marina Schaffman, São Paulo).`;
 
-  const introAutomotiva = `Olá, meu nome é ${VENDEDOR} (${VENDEDOR_INSTAGRAM} no Instagram). Faço sites sob medida para oficinas, autopeças, pneus, mecânica e outros serviços ligados a veículos. Para verem ritmo e apresentação num caso publicado neste universo: ${SITE_LINEA_MOTOR} (Linea Motor). Horários, serviços, WhatsApp e contacto claros no telemóvel.`;
+  const introAutomotiva = `Olá, meu nome é ${VENDEDOR} (${VENDEDOR_INSTAGRAM} no Instagram). Faço sites sob medida pra oficinas, autopeças, pneus, mecânica e o que for ligado a carro. Pra vocês verem ritmo e apresentação num caso publicado nessa linha: ${SITE_LINEA_MOTOR} (Linea Motor). Horário, serviço, WhatsApp e contato bem claros no celular.`;
 
-  const introEscritorioComercial = `Olá, meu nome é ${VENDEDOR} (${VENDEDOR_INSTAGRAM} no Instagram). Faço sites sob medida para escritórios e serviços B2B: contabilidade, advocacia, consultoria, corretagem e equipas pequenas que precisam de presença online séria — áreas de atuação, equipa, formulários e contacto claros, com leitura confortável no telemóvel.`;
+  const introEscritorioComercial = `Olá, meu nome é ${VENDEDOR} (${VENDEDOR_INSTAGRAM} no Instagram). Faço sites sob medida pra escritório e serviço B2B: contabilidade, advocacia, consultoria, corretagem e equipe pequena que precisa de presença online séria, com área de atuação, quem é a equipe, formulário e contato fácil de achar, tudo legível no celular.`;
 
   const intro =
     seg === "estetica_auto"
@@ -154,51 +154,51 @@ function gerarFraseAbordagem(empresa, rowIndex, tipoMaps) {
             : introGeral;
 
   const corposGeral = [
-    `Seria possível marcarem uma conversa curta, sem compromisso, só para ver se faz sentido falarmos num site ou num software alinhado ao que imaginam?`,
-    `Se estiverem abertos a explorar essa possibilidade, posso explicar em poucos minutos como costumo montar projetos à medida e que tipo de resultado costumo entregar.`,
-    `Gosto de trabalhar em parceria: primeiro percebo a visão de vocês, depois proponho o caminho técnico (site, portal ou ferramenta), sempre com espaço para ajustes ao longo do projeto.`,
-    `Posso combinar uma chamada rápida para alinharmos expectativas e, se fizer sentido para os dois lados, seguir com uma proposta clara em escopo e prazo.`,
-    `O que me motiva é construir algo que vocês sintam “nosso”: identidade, textos e fluxos pensados em conjunto, em vez de um modelo genérico aplicado por cima.`,
-    `Se quiserem dar o próximo passo no digital com algo pensado à medida, estou disponível para uma primeira conversa, sem custo para essa etapa inicial.`,
-    `Trabalho com entregas em fases, com protótipo cedo e feedback frequente, para vocês irem vendo o material a tomar forma com calma.`,
-    `Posso ajudar a pensar numa vitrine online, integrações (por exemplo com WhatsApp) ou pequenas automações, sempre com transparência sobre o que entra em cada fase.`,
-    `Resumo do meu lado: escuta, proposta alinhada ao que combinarmos, e código/documentação organizados para vocês poderem evoluir com tranquilidade mais tarde.`,
-    `Se fizer sentido, envio disponibilidade para uma chamada de voz ou vídeo. O objetivo é só perceber se há encaixe e como poderia contribuir com site ou software sob medida.`,
-    `Valorizo flexibilidade: ajustamos prioridades e detalhes até o resultado ficar confortável para quem vai usar no dia a dia.`,
-    `Fico à disposição para apresentar referências de trabalho e explicar como costumo estruturar um projeto à medida, se quiserem conhecer melhor o processo.`,
+    `Dá pra marcar uma conversa curta, sem compromisso, só pra ver se faz sentido a gente falar de site ou de software no ritmo de vocês?`,
+    `Se vocês estiverem abertos a explorar a ideia, explico em poucos minutos como costumo montar projeto sob medida e que tipo de resultado costumo entregar.`,
+    `Gosto de trabalhar junto: primeiro entendo a linha de vocês, depois proponho o caminho técnico (site, portal ou ferramenta), sempre com espaço pra ajuste ao longo do projeto.`,
+    `Posso combinar uma ligação rápida pra alinhar expectativa e, se fizer sentido pros dois lados, seguir com proposta clara de escopo e prazo.`,
+    `O que me move é entregar algo que vocês sintam de vocês: identidade, texto e fluxo pensados junto, não modelo genérico jogado em cima.`,
+    `Se quiserem dar o próximo passo no digital com algo sob medida, estou disponível pra uma primeira conversa, sem custo nessa etapa inicial.`,
+    `Trabalho com entrega em fases, protótipo cedo e retorno frequente, pra vocês irem vendo o material tomando forma com calma.`,
+    `Posso ajudar a pensar vitrine online, integração (tipo WhatsApp) ou automação pequena, sempre dizendo o que entra em cada fase.`,
+    `Resumo: escuto, proponho alinhado ao que a gente combinar, e deixo código e documentação organizados pra vocês evoluírem com tranquilidade depois.`,
+    `Se fizer sentido, mando horário pra chamada de voz ou vídeo. É só pra ver se tem encaixe e como posso ajudar com site ou software sob medida.`,
+    `Prezo flexibilidade: a gente vai ajustando prioridade e detalhe até ficar confortável pra quem usa no dia a dia.`,
+    `Estou à disposição pra mostrar referência de trabalho e explicar como costumo estruturar projeto sob medida, se vocês quiserem conhecer o processo.`,
   ];
 
   const corposEstetica = [
-    `Se fizer sentido, combino uns minutos por chamada para perceber o que imaginam para o site: galeria, serviços, WhatsApp e identidade visual adaptados ao projeto. O link acima (${SITE_LINEA_MOTOR}) mostra o tipo de navegação e apresentação que costumo montar.`,
-    `Posso desenhar uma vitrine digital à medida (pacotes, antes/depois, marca) sem depender de template genérico. Para verem o resultado num caso real: ${SITE_LINEA_MOTOR}.`,
-    `Para polimento, vitrificação, PPF ou envelopamento, um site rápido no telemóvel e bem organizado costuma ser um bom canal. O exemplo Linea Motor está em ${SITE_LINEA_MOTOR}. Topam uma conversa curta?`,
-    `Entrego em fases com protótipo cedo, para irem validando textos e secções. Referência de layout e ritmo na mesma linha do que vos interessa: ${SITE_LINEA_MOTOR}.`,
-    `Se quiserem explorar a ideia sem compromisso, envio disponibilidade ou respondo a dúvidas por aqui. O site de exemplo continua disponível em ${SITE_LINEA_MOTOR}.`,
-    `Resumo: site sob medida para este segmento, com foco em clareza e imagem. Podem navegar em ${SITE_LINEA_MOTOR} e, se gostarem do tom, falamos no que mudaríamos para o vosso caso.`,
+    `Se fizer sentido, combino uns minutos por chamada pra entender o que vocês imaginam pro site: galeria, serviço, WhatsApp e identidade visual no projeto. O link acima (${SITE_LINEA_MOTOR}) mostra o tipo de navegação e apresentação que costumo montar.`,
+    `Posso desenhar vitrine digital sob medida (pacote, antes/depois, marca) sem depender de template genérico. Pra ver o resultado num caso real: ${SITE_LINEA_MOTOR}.`,
+    `Pra polimento, vitrificação, PPF ou envelopamento, um site rápido no celular e bem organizado costuma ajudar. O exemplo Linea Motor tá em ${SITE_LINEA_MOTOR}. Topam uma conversa curta?`,
+    `Entrego em fases com protótipo cedo, pra vocês irem validando texto e seção. Referência de layout e ritmo na mesma linha do que interessa pra vocês: ${SITE_LINEA_MOTOR}.`,
+    `Se quiserem explorar a ideia sem compromisso, mando horário ou respondo dúvida por aqui. O site de exemplo continua em ${SITE_LINEA_MOTOR}.`,
+    `Resumo: site sob medida pra esse segmento, com foco em clareza e imagem. Vocês podem navegar em ${SITE_LINEA_MOTOR} e, se curtirem o tom, falamos no que mudar pro caso de vocês.`,
   ];
 
   const corposArquitetura = [
-    `Posso estruturar um site com galeria de projetos, áreas de atuação e contacto direto (por exemplo WhatsApp), pensado para leitura rápida no telemóvel. Para verem o tipo de apresentação e ritmo que costumo entregar neste setor: ${SITE_PORTFOLIO_ARQUITETURA}.`,
-    `Se fizer sentido, combino uma chamada curta para alinharmos que secções fariam mais diferença no ar: obras, concursos, equipa, publicações. O link acima (${SITE_PORTFOLIO_ARQUITETURA}) mostra um caso real.`,
-    `Trabalho com entregas em fases e protótipo cedo, para irem validando textos e imagens à medida que o site ganha forma. Referência visual no mesmo espírito: ${SITE_PORTFOLIO_ARQUITETURA}.`,
-    `Também consigo ajudar com formulários simples (contacto, candidaturas) ou integrações leves. Exemplo de site completo nesta linha: ${SITE_PORTFOLIO_ARQUITETURA}.`,
-    `Fico à disposição para mostrar referências e explicar o processo. Podem navegar em ${SITE_PORTFOLIO_ARQUITETURA} e, se o tom servir de base, falamos no que adaptaríamos ao vosso gabinete.`,
+    `Posso estruturar site com galeria de projeto, área de atuação e contato direto (tipo WhatsApp), pensado pra leitura rápida no celular. Pra vocês verem o tipo de apresentação e ritmo que costumo entregar nesse setor: ${SITE_PORTFOLIO_ARQUITETURA}.`,
+    `Se fizer sentido, combino chamada curta pra alinhar que seção faria mais diferença no ar: obra, concurso, equipe, publicação. O link acima (${SITE_PORTFOLIO_ARQUITETURA}) mostra um caso real.`,
+    `Trabalho com entrega em fases e protótipo cedo, pra vocês irem validando texto e imagem enquanto o site ganha forma. Referência visual no mesmo espírito: ${SITE_PORTFOLIO_ARQUITETURA}.`,
+    `Também consigo formulário simples (contato, candidatura) ou integração leve. Exemplo de site completo nessa linha: ${SITE_PORTFOLIO_ARQUITETURA}.`,
+    `Estou à disposição pra mostrar referência e explicar o processo. Vocês podem navegar em ${SITE_PORTFOLIO_ARQUITETURA} e, se o tom servir de base, falamos no que adaptar pro escritório de vocês.`,
   ];
 
   const corposAutomotiva = [
-    `Posso montar uma página com lista de serviços, marca, morada e botão de WhatsApp, pensada para quem procura oficina ou peças no telemóvel. O link acima (${SITE_LINEA_MOTOR}) mostra o tipo de navegação e clareza que costumo buscar em projetos automotivos.`,
-    `Também consigo organizar secções por tipo de serviço (mecânica, elétrica, pneus, revisão) e atualizar com calma. Referência visual publicada: ${SITE_LINEA_MOTOR}.`,
-    `Trabalho em fases com protótipo cedo, para validarem textos e fotos antes de publicar. Podem ver o exemplo Linea Motor em ${SITE_LINEA_MOTOR} e imaginar a estrutura adaptada ao vosso negócio.`,
-    `Se quiserem explorar sem compromisso, envio disponibilidade ou respondo por aqui. O site de exemplo continua em ${SITE_LINEA_MOTOR}.`,
-    `Fico à disposição para explicar prazos e etapas. Para inspiração no tom do site: ${SITE_LINEA_MOTOR}.`,
+    `Posso montar página com lista de serviço, marca, endereço e botão de WhatsApp, pensada pra quem busca oficina ou peça no celular. O link acima (${SITE_LINEA_MOTOR}) mostra o tipo de navegação e clareza que costumo buscar em projeto automotivo.`,
+    `Também consigo organizar seção por tipo de serviço (mecânica, elétrica, pneu, revisão) e ir atualizando com calma. Referência visual publicada: ${SITE_LINEA_MOTOR}.`,
+    `Trabalho em fases com protótipo cedo, pra vocês validarem texto e foto antes de publicar. Vocês podem ver o exemplo Linea Motor em ${SITE_LINEA_MOTOR} e imaginar a estrutura adaptada ao negócio de vocês.`,
+    `Se quiserem explorar sem compromisso, mando horário ou respondo por aqui. O site de exemplo continua em ${SITE_LINEA_MOTOR}.`,
+    `Estou à disposição pra explicar prazo e etapa. Pra inspiração no tom do site: ${SITE_LINEA_MOTOR}.`,
   ];
 
   const corposEscritorioComercial = [
-    `Se fizer sentido, combino uma chamada curta para perceber que secções fariam mais diferença no ar: serviços, equipa, publicações, formulário de contacto ou marcação. Entrego em fases, com protótipo cedo e revisões ao longo do projeto.`,
-    `Posso estruturar páginas por área de prática ou por tipo de cliente, com textos claros e hierarquia fácil de ler no telemóvel — sem depender de template genérico que não reflete o tom do escritório.`,
-    `Também consigo integrar WhatsApp, mapa e links úteis (OAB, CRC, redes) de forma organizada, para quem chega pelo Google ou por indicação encontrar logo o que precisa.`,
-    `Trabalho com margem para afinar conteúdo e detalhes até o site ficar confortável para quem responde contactos no dia a dia. Se quiserem explorar sem compromisso, envio disponibilidade ou respondo por aqui.`,
-    `Resumo do meu lado: escuta, proposta alinhada ao que combinarmos, e código organizado para poderem evoluir com calma. Fico à disposição para uma primeira conversa.`,
+    `Se fizer sentido, combino chamada curta pra entender que seção faria mais diferença no ar: serviço, equipe, publicação, formulário de contato ou agendamento. Entrego em fases, com protótipo cedo e revisão ao longo do projeto.`,
+    `Posso estruturar página por área de prática ou por tipo de cliente, com texto claro e hierarquia fácil de ler no celular, sem depender de template genérico que não reflete o tom do escritório.`,
+    `Também consigo integrar WhatsApp, mapa e link útil (OAB, CRC, rede social) de forma organizada, pra quem chega pelo Google ou por indicação achar logo o que precisa.`,
+    `Trabalho com margem pra afinar conteúdo e detalhe até o site ficar confortável pra quem responde contato no dia a dia. Se quiserem explorar sem compromisso, mando horário ou respondo por aqui.`,
+    `Resumo: escuto, proponho alinhado ao que a gente combinar, e deixo código organizado pra vocês evoluírem com calma. Estou à disposição pra uma primeira conversa.`,
   ];
 
   const pools = {
