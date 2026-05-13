@@ -138,6 +138,7 @@
       white-space: nowrap;
     }
     .pill-cat.estetica { background: #c8e6c9; }
+    .pill-cat.arquitetura { background: #bbdefb; }
     .pill-cat.comercio { background: #fff9c4; }
     .pill-cat.outros { background: #e0e0e0; }
     .cloud-msg { font-size: 0.82rem; font-weight: 600; margin-top: 0.5rem; min-height: 1.25rem; }
@@ -176,7 +177,7 @@
     <strong>rodar.bat</strong> / servidor local na pasta do projeto, ou confirma no deploy (Vercel) que a pasta
     <code>js</code> foi enviada com o site.
   </p>
-  <p class="sub">A lista fica <strong>guardada neste browser</strong> depois de analisares (memória local do site). Com <strong>rodar.bat</strong> também podes carregar <code>clientes.tsv</code> / <code>colagem.txt</code> da pasta. Opcional: <strong>Supabase</strong> para a mesma lista noutro PC. A coluna <strong>Abordagem</strong> usa <code>gerarFraseAbordagem</code> (segmento pelo nome da empresa + hash estável); negócios de <strong>estética automotiva</strong> recebem o link do portfólio <a href="https://estetica-auto-xi.vercel.app/" target="_blank" rel="noopener">estetica-auto-xi.vercel.app</a>. <strong>Guardar</strong> grava a mesma frase na lista em baixo.</p>
+  <p class="sub">A lista fica <strong>guardada neste browser</strong> depois de analisares (memória local do site). Com <strong>rodar.bat</strong> também podes carregar <code>clientes.tsv</code> + <code>clientes-estetica.tsv</code> + <code>clientes-arquitetura.tsv</code> (gerados por <code>python parse_clientes.py</code>) e <code>colagem.txt</code> da pasta. Opcional: <strong>Supabase</strong> para a mesma lista noutro PC. A coluna <strong>Abordagem</strong> usa <code>gerarFraseAbordagem</code> (nome + categoria do Maps quando existir + hash estável): estética automotiva inclui <a href="https://estetica-auto-xi.vercel.app/" target="_blank" rel="noopener">estetica-auto-xi.vercel.app</a>; arquitetura inclui <a href="https://marina-shaffman.vercel.app/" target="_blank" rel="noopener">marina-shaffman.vercel.app</a>. <strong>Guardar</strong> grava a mesma frase na lista em baixo.</p>
 
   <div class="panel" id="sbCloudPanel">
     <label>Nuvem (Supabase)</label>
@@ -222,6 +223,7 @@
       <span class="filter-cat-label">Categoria</span>
       <label><input type="radio" name="catCliente" value="todos" checked /> Todos</label>
       <label><input type="radio" name="catCliente" value="estetica" /> Estética automotiva</label>
+      <label><input type="radio" name="catCliente" value="arquitetura" /> Arquitetura</label>
       <label><input type="radio" name="catCliente" value="comercio" /> Comércio</label>
       <label><input type="radio" name="catCliente" value="outros" /> Outros</label>
     </div>
@@ -241,7 +243,7 @@
   </div>
 
   <h2 class="section-title" id="tituloListaGuardada" hidden>Lista guardada para abordagem</h2>
-  <p class="sub" id="hintListaGuardada" hidden style="margin-top: -0.25rem">Frases geradas por <code>js/abordagem-frases.js</code>. O filtro <strong>Categoria</strong> (estética / comércio / outros) usa o mesmo critério do nome da empresa; no futuro dá para acrescentar mais categorias no JS. Usa <strong>Guardar</strong> depois de filtrar.</p>
+  <p class="sub" id="hintListaGuardada" hidden style="margin-top: -0.25rem">Frases geradas por <code>js/abordagem-frases.js</code>. O filtro <strong>Categoria</strong> (estética / arquitetura / comércio / outros) combina nome da empresa e tipo do Maps quando existir. Usa <strong>Guardar</strong> depois de filtrar.</p>
   <div class="wrap" id="savedWrap" hidden>
     <table>
       <thead>
@@ -314,7 +316,7 @@
     function loadCatFiltroFromStorage() {
       try {
         const v = localStorage.getItem(KEY_FILTRO_CAT);
-        if (v === "estetica" || v === "comercio" || v === "outros" || v === "todos") {
+        if (v === "estetica" || v === "arquitetura" || v === "comercio" || v === "outros" || v === "todos") {
           document.querySelectorAll('input[name="catCliente"]').forEach((inp) => {
             inp.checked = inp.value === v;
           });
@@ -340,7 +342,8 @@
       const key = (r.empresa || "").trim().toLowerCase();
       const hit = savedAbordagem.find((x) => (x.empresa || "").trim().toLowerCase() === key);
       if (hit && hit.abordagem) return hit.abordagem;
-      if (typeof gerarFraseAbordagem === "function") return gerarFraseAbordagem(r.empresa);
+      if (typeof gerarFraseAbordagem === "function")
+        return gerarFraseAbordagem(r.empresa, undefined, r.tipoMaps || "");
       return "(Carrega js/abordagem-frases.js — vê aviso em cima.)";
     }
 
@@ -360,14 +363,16 @@
       const out = [];
       for (let i = start; i < lines.length; i++) {
         const line = lines[i];
-        const tab = line.indexOf("\t");
-        const empresa = (tab === -1 ? line : line.slice(0, tab)).trim() || "(sem nome)";
-        const telRaw = tab === -1 ? "" : line.slice(tab + 1).trim();
+        const parts = line.split("\t");
+        const empresa = (parts[0] || "").trim() || "(sem nome)";
+        const telRaw = (parts[1] !== undefined ? parts[1] : "").trim();
+        let tipoMaps = (parts[2] !== undefined ? parts[2] : "").trim();
+        if (tipoMaps === "—") tipoMaps = "";
         const phones =
           telRaw && telRaw !== "—"
             ? telRaw.split(/\s*;\s*/).map((x) => x.trim()).filter(Boolean)
             : [];
-        out.push({ empresa, phones });
+        out.push({ empresa, phones, tipoMaps });
       }
       return out;
     }
@@ -537,15 +542,24 @@
     function analyzeRows(text) {
       return splitMapsBlocks(text).map((raw) => {
         const phones = extractPhones(raw);
-        return { empresa: empresaForMapBlock(raw, phones), phones };
+        const tipoMaps =
+          typeof extractTipoGoogleMaps === "function" ? extractTipoGoogleMaps(raw) : "";
+        return { empresa: empresaForMapBlock(raw, phones), phones, tipoMaps };
       });
     }
 
     function buildTsv(rows) {
-      return (
-        "empresa\ttelefone\n" +
-        rows.map((r) => r.empresa + "\t" + (r.phones.length ? r.phones.join("; ") : "—")).join("\n")
-      );
+      const hasTipo = rows.some((r) => (r.tipoMaps || "").trim());
+      const head = hasTipo ? "empresa\ttelefone\ttipo\n" : "empresa\ttelefone\n";
+      const body = rows.map((r) => {
+        const tel = r.phones.length ? r.phones.join("; ") : "—";
+        if (hasTipo) {
+          const t = (r.tipoMaps || "").trim() || "—";
+          return r.empresa + "\t" + tel + "\t" + t;
+        }
+        return r.empresa + "\t" + tel;
+      });
+      return head + body.join("\n");
     }
 
     let lastRows = [];
@@ -558,7 +572,7 @@
       const catF = getCategoriaFiltroUI();
       return lastRows.filter((r) => {
         if (catF !== "todos" && typeof filtroCategoriaCliente === "function") {
-          if (filtroCategoriaCliente(r.empresa) !== catF) return false;
+          if (filtroCategoriaCliente(r.empresa, r.tipoMaps || "") !== catF) return false;
         }
         if (soTel && !r.phones.length) return false;
         if (!q) return true;
@@ -588,7 +602,7 @@
       }
       if (vis === 0) {
         statusFiltro.textContent =
-          "Nenhum cliente corresponde aos filtros (texto/número ou categoria). Se estiveres em «Estética» ou «Comércio» e a lista sumiu, escolhe «Todos».";
+          "Nenhum cliente corresponde aos filtros (texto/número ou categoria). Se estiveres em «Estética», «Arquitetura» ou «Comércio» e a lista sumiu, escolhe «Todos».";
         return;
       }
       rows.forEach((r, i) => {
@@ -609,10 +623,19 @@
         spNome.textContent = r.empresa;
         nomeWrap.appendChild(spNome);
         if (typeof filtroCategoriaCliente === "function") {
-          const cat = filtroCategoriaCliente(r.empresa);
+          const cat = filtroCategoriaCliente(r.empresa, r.tipoMaps || "");
           const pill = document.createElement("span");
           pill.className = "pill-cat " + cat;
-          pill.textContent = cat === "estetica" ? "Estética" : cat === "comercio" ? "Comércio" : "Outros";
+          pill.textContent =
+            typeof labelCategoriaCliente === "function"
+              ? labelCategoriaCliente(cat)
+              : cat === "estetica"
+                ? "Estética"
+                : cat === "arquitetura"
+                  ? "Arquitetura"
+                  : cat === "comercio"
+                    ? "Comércio"
+                    : "Outros";
           nomeWrap.appendChild(pill);
         }
         nomeTd.appendChild(nomeWrap);
@@ -665,7 +688,7 @@
       const catF = getCategoriaFiltroUI();
       const list = savedAbordagem.filter((item) => {
         if (catF === "todos" || typeof filtroCategoriaCliente !== "function") return true;
-        return filtroCategoriaCliente(item.empresa) === catF;
+        return filtroCategoriaCliente(item.empresa, item.tipoMaps || "") === catF;
       });
 
       if (!list.length) {
@@ -691,10 +714,19 @@
         spNome.textContent = item.empresa;
         nomeWrap.appendChild(spNome);
         if (typeof filtroCategoriaCliente === "function") {
-          const cat = filtroCategoriaCliente(item.empresa);
+          const cat = filtroCategoriaCliente(item.empresa, item.tipoMaps || "");
           const pill = document.createElement("span");
           pill.className = "pill-cat " + cat;
-          pill.textContent = cat === "estetica" ? "Estética" : cat === "comercio" ? "Comércio" : "Outros";
+          pill.textContent =
+            typeof labelCategoriaCliente === "function"
+              ? labelCategoriaCliente(cat)
+              : cat === "estetica"
+                ? "Estética"
+                : cat === "arquitetura"
+                  ? "Arquitetura"
+                  : cat === "comercio"
+                    ? "Comércio"
+                    : "Outros";
           nomeWrap.appendChild(pill);
         }
         t1.appendChild(nomeWrap);
@@ -770,9 +802,7 @@
           " · Com telefone: " +
           comTel +
           " (memória do browser — mesma lista que na página completa)" +
-          (c
-            ? " · Categorias: estética " + c.estetica + ", comércio " + c.comercio + ", outros " + c.outros
-            : "");
+          (c && typeof resumoContagemCategorias === "function" ? resumoContagemCategorias(c) : "");
         renderMain();
         renderSavedList();
         status.textContent = "Lista restaurada do que já tinhas pedido neste site.";
@@ -806,7 +836,7 @@
         "Linhas na tabela: " + lastRows.length + " · Com telefone no texto: " + comTel;
       if (typeof contarClientesPorCategoria === "function" && lastRows.length) {
         const c = contarClientesPorCategoria(lastRows);
-        sumLine += " · Categorias: estética " + c.estetica + ", comércio " + c.comercio + ", outros " + c.outros;
+        sumLine += typeof resumoContagemCategorias === "function" ? resumoContagemCategorias(c) : "";
       }
       summary.textContent = sumLine;
       renderMain();
@@ -860,11 +890,12 @@
       }
       picked.forEach((r) => {
         const key = (r.empresa || "").trim().toLowerCase();
-        const frase = gen(r.empresa);
+        const frase = gen(r.empresa, undefined, r.tipoMaps || "");
         const i = savedAbordagem.findIndex((x) => (x.empresa || "").trim().toLowerCase() === key);
         const entry = {
           id: i >= 0 ? savedAbordagem[i].id : novoId(),
           empresa: r.empresa,
+          tipoMaps: r.tipoMaps || "",
           phones: (r.phones || []).slice(),
           abordagem: frase,
         };
@@ -932,7 +963,7 @@
         " · Com telefone: " +
         comTel +
         " (nuvem Supabase)" +
-        (c ? " · Categorias: estética " + c.estetica + ", comércio " + c.comercio + ", outros " + c.outros : "");
+        (c && typeof resumoContagemCategorias === "function" ? resumoContagemCategorias(c) : "");
       renderMain();
       renderSavedList();
       persistSavedTsv(lastTsv);
@@ -945,34 +976,41 @@
 
     async function loadFromRepoFiles() {
       let loadedFromTsv = false;
-      try {
-        const r = await fetch("clientes.tsv", { cache: "no-store" });
-        if (r.ok) {
+      const merged = [];
+      for (const fname of ["clientes.tsv", "clientes-estetica.tsv", "clientes-arquitetura.tsv"]) {
+        try {
+          const r = await fetch(fname, { cache: "no-store" });
+          if (!r.ok) continue;
           const t = await r.text();
           const rows = parseTsvClientePhone(t);
-          if (rows.length) {
-            lastRows = rows;
-            lastTsv = buildTsv(lastRows);
-            const comTel = lastRows.filter((x) => x.phones.length).length;
-            const c =
-              typeof contarClientesPorCategoria === "function" && lastRows.length
-                ? contarClientesPorCategoria(lastRows)
-                : null;
-            summary.textContent =
-              "Linhas na tabela: " +
-              lastRows.length +
-              " · Com telefone: " +
-              comTel +
-              " (ficheiro clientes.tsv na pasta do projeto)" +
-              (c ? " · Categorias: estética " + c.estetica + ", comércio " + c.comercio + ", outros " + c.outros : "");
-            renderMain();
-            renderSavedList();
-            status.textContent = "Lista carregada de clientes.tsv.";
-            loadedFromTsv = true;
-            persistSavedTsv(lastTsv);
-          }
+          merged.push(...rows);
+        } catch (_) {}
+      }
+      if (merged.length) {
+        const byKey = new Map();
+        for (const r of merged) {
+          byKey.set((r.empresa || "").trim().toLowerCase(), r);
         }
-      } catch (_) {}
+        lastRows = [...byKey.values()];
+        lastTsv = buildTsv(lastRows);
+        const comTel = lastRows.filter((x) => x.phones.length).length;
+        const c =
+          typeof contarClientesPorCategoria === "function" && lastRows.length
+            ? contarClientesPorCategoria(lastRows)
+            : null;
+        summary.textContent =
+          "Linhas na tabela: " +
+          lastRows.length +
+          " · Com telefone: " +
+          comTel +
+          " (ficheiros clientes.tsv + clientes-estetica.tsv + clientes-arquitetura.tsv na pasta do projeto)" +
+          (c && typeof resumoContagemCategorias === "function" ? resumoContagemCategorias(c) : "");
+        renderMain();
+        renderSavedList();
+        status.textContent = "Lista carregada dos TSV na pasta.";
+        loadedFromTsv = true;
+        persistSavedTsv(lastTsv);
+      }
 
       try {
         if (!paste.value.trim()) {
@@ -1000,7 +1038,7 @@
 
       if (!loadedFromTsv && !lastRows.length && !paste.value.trim()) {
         status.textContent =
-          "Cola o texto do Maps e clica em Analisar, ou usa rodar.bat para carregar clientes.tsv / colagem.txt da pasta.";
+          "Cola o texto do Maps e clica em Analisar, ou usa rodar-parse.bat (gera os três TSV) / colagem.txt na pasta.";
       }
     }
 

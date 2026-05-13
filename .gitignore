@@ -1,6 +1,8 @@
 # Dados locais / listas (não enviar para repositório público)
 colagem.txt
 clientes.tsv
+clientes-estetica.tsv
+clientes-arquitetura.tsv
 
 # Python
 __pycache__/

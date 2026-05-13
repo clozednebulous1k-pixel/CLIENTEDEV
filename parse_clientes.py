@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-Lê uma colagem do Google Maps (com linhas 'Rotas') e gera clientes.tsv
-com colunas: empresa | telefone
+Lê uma colagem do Google Maps (com linhas 'Rotas') e gera:
+  - clientes.tsv — linhas que não são estética automotiva nem arquitetura (pelo nome + tipo Maps)
+  - clientes-estetica.tsv — só estética automotiva
+  - clientes-arquitetura.tsv — só arquitetura / design de interiores / paisagismo (critério alinhado ao JS)
+
+Colunas: empresa | telefone | tipo (categoria do Maps, quando detectada)
 
 Uso:
   python parse_clientes.py
@@ -26,6 +30,68 @@ def phones_in(text):
         if len(d) in (10, 11) and p not in out:
             out.append(p)
     return out
+
+
+ESTETICA_RE = re.compile(
+    r"est[ée]tica automotiva|"
+    r"centro de est[ée]tica|"
+    r"detailing|detalhamento automot|"
+    r"vitrifica|"
+    r"polimento automot|polimento de car|polimento de ve[íi]cul|"
+    r"cer[âa]mica automot|"
+    r"nano[- ]?ceramic|coating|"
+    r"\bppf\b|paint protection|"
+    r"envelopamento|"
+    r"auto spa|car care|"
+    r"est[ée]tica auto\b|"
+    r"funilaria est[ée]t|"
+    r"higieniza.*(carro|ve[íi]cul|interior)|"
+    r"lavagem.*(premium|detalh)|"
+    r"lava[- ]?jato.*(carro|ve[íi]cul|auto)",
+    re.I,
+)
+
+ARQUITETURA_RE = re.compile(
+    r"arquitet|arquiteto|arquiteta|"
+    r"escritório de arquitet|escritorio de arquitet|"
+    r"estúdio de arquitet|estudio de arquitet|"
+    r"urbanismo\b|paisagismo|projeto arquitet|"
+    r"design de interiores|decorador de interiores",
+    re.I,
+)
+
+
+def is_estetica_row(empresa: str, tipo_maps: str) -> bool:
+    blob = f"{empresa or ''} {tipo_maps or ''}".lower()
+    return bool(ESTETICA_RE.search(blob))
+
+
+def is_arquitetura_row(empresa: str, tipo_maps: str) -> bool:
+    blob = f"{empresa or ''} {tipo_maps or ''}".lower()
+    return bool(ARQUITETURA_RE.search(blob))
+
+
+def row_bucket(empresa: str, tipo_maps: str) -> str:
+    if is_estetica_row(empresa, tipo_maps):
+        return "e"
+    if is_arquitetura_row(empresa, tipo_maps):
+        return "a"
+    return "o"
+
+
+def extract_tipo_maps(block: str) -> str:
+    lines = [ln.strip() for ln in block.splitlines() if ln.strip()]
+    for i, ln in enumerate(lines):
+        if re.match(r"^(Nenhuma avaliação|\d+[,.]\d+)", ln):
+            if i + 1 >= len(lines):
+                return ""
+            nxt = lines[i + 1]
+            sep = " · "
+            j = nxt.find(sep)
+            if j == -1:
+                return ""
+            return nxt[:j].strip()
+    return ""
 
 
 def title_line(block):
@@ -88,14 +154,22 @@ def parse_raw(raw: str):
         name = refine_name_for_messy_block(b, ph) or title_line(b)
         if name in ("·", "\ue4ee", "\ue84b") or (len(name) < 2 and ph):
             name = title_line(b.replace("\n·\n", "\n"))
-        rows.append((name, "; ".join(ph) if ph else "—"))
+        tipo = extract_tipo_maps(b)
+        rows.append((name, "; ".join(ph) if ph else "—", tipo))
     return rows
+
+
+def tsv_line(n, p, t):
+    tipo = (t or "").strip() or "—"
+    return f"{n}\t{p}\t{tipo}"
 
 
 def main():
     base = Path(__file__).resolve().parent
     in_path = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else base / "colagem.txt"
-    out_path = base / "clientes.tsv"
+    out_main = base / "clientes.tsv"
+    out_est = base / "clientes-estetica.tsv"
+    out_arq = base / "clientes-arquitetura.tsv"
 
     if not in_path.is_file():
         print(f"Ficheiro não encontrado: {in_path}", file=sys.stderr)
@@ -105,8 +179,30 @@ def main():
     raw = in_path.read_text(encoding="utf-8")
     rows = parse_raw(raw)
 
-    out_path.write_text(
-        "empresa\ttelefone\n" + "\n".join(f"{n}\t{p}" for n, p in rows) + "\n",
+    estetica = []
+    arquitetura = []
+    resto = []
+    for r in rows:
+        n, p, t = r
+        b = row_bucket(n, t)
+        if b == "e":
+            estetica.append(r)
+        elif b == "a":
+            arquitetura.append(r)
+        else:
+            resto.append(r)
+
+    header = "empresa\ttelefone\ttipo\n"
+    out_main.write_text(
+        header + "\n".join(tsv_line(n, p, t) for n, p, t in resto) + "\n",
+        encoding="utf-8",
+    )
+    out_est.write_text(
+        header + "\n".join(tsv_line(n, p, t) for n, p, t in estetica) + "\n",
+        encoding="utf-8",
+    )
+    out_arq.write_text(
+        header + "\n".join(tsv_line(n, p, t) for n, p, t in arquitetura) + "\n",
         encoding="utf-8",
     )
 
@@ -114,10 +210,12 @@ def main():
         sys.stdout.reconfigure(encoding="utf-8")
     except Exception:
         pass
-    print("empresa\ttelefone")
-    for n, p in rows:
-        print(f"{n}\t{p}")
-    print(f"\nGravado: {out_path}", file=sys.stderr)
+    print(
+        f"Total: {len(rows)} · Estética: {len(estetica)} · Arquitetura: {len(arquitetura)} · Restantes: {len(resto)}"
+    )
+    print(f"Gravado: {out_main}")
+    print(f"Gravado: {out_est}")
+    print(f"Gravado: {out_arq}")
 
 
 if __name__ == "__main__":

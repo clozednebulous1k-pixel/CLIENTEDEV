@@ -217,6 +217,7 @@
       white-space: nowrap;
     }
     .maps-pill-cat.estetica { background: #c8e6c9; }
+    .maps-pill-cat.arquitetura { background: #bbdefb; }
     .maps-pill-cat.comercio { background: #fff9c4; }
     .maps-pill-cat.outros { background: #e8e8e8; }
     .maps-clientes-title {
@@ -337,6 +338,7 @@
       <span class="maps-filter-cat-label">Categoria</span>
       <label><input type="radio" name="mapsCatFiltro" value="todos" checked /> Todos</label>
       <label><input type="radio" name="mapsCatFiltro" value="estetica" /> Estética automotiva</label>
+      <label><input type="radio" name="mapsCatFiltro" value="arquitetura" /> Arquitetura</label>
       <label><input type="radio" name="mapsCatFiltro" value="comercio" /> Comércio</label>
       <label><input type="radio" name="mapsCatFiltro" value="outros" /> Outros</label>
     </div>
@@ -403,7 +405,7 @@ parceiro_som
     <div class="handles" id="handleList" role="listbox" aria-label="Lista filtrada de handles"></div>
 
     <label for="templateInput">Modelo (<code>{{nome}}</code> · <code>{{arroba}}</code> · <code>{{meuig}}</code>)</label>
-    <textarea id="templateInput" spellcheck="false">Olá {{nome}}, tudo bem? Sou {{meuig}} no Instagram — desenvolvo sites e softwares. Vi o perfil {{arroba}} e queria saber se faz sentido conversarmos (orçamento sem compromisso). Abraço, Alessandro.</textarea>
+    <textarea id="templateInput" spellcheck="false">Olá {{nome}}, tudo bem? Sou {{meuig}} no Instagram e desenvolvo sites e softwares. Vi o perfil {{arroba}} e queria saber se faz sentido conversarmos (orçamento sem compromisso). Abraço, Alessandro.</textarea>
 
     <label>Pré-visualização</label>
     <div class="preview" id="preview" aria-live="polite">Selecione alguém na lista.</div>
@@ -692,7 +694,7 @@ parceiro_som
     function loadMapsCatFiltroFromStorage() {
       try {
         const v = localStorage.getItem(STORAGE.mapsCatFiltro);
-        if (v === "estetica" || v === "comercio" || v === "outros" || v === "todos") mapsCatFiltro = v;
+        if (v === "estetica" || v === "arquitetura" || v === "comercio" || v === "outros" || v === "todos") mapsCatFiltro = v;
       } catch (_) {}
       syncMapsCatRadios();
     }
@@ -706,10 +708,10 @@ parceiro_som
     function getMapsRowsFiltrados() {
       if (!lastMapsRows.length) return [];
       if (mapsCatFiltro === "todos" || typeof filtroCategoriaCliente !== "function") return lastMapsRows.slice();
-      return lastMapsRows.filter((r) => filtroCategoriaCliente(r.empresa) === mapsCatFiltro);
+      return lastMapsRows.filter((r) => filtroCategoriaCliente(r.empresa, r.tipoMaps || "") === mapsCatFiltro);
     }
 
-    function appendNomeComPill(td, empresa) {
+    function appendNomeComPill(td, empresa, tipoMaps) {
       td.textContent = "";
       const wrap = document.createElement("div");
       wrap.className = "maps-nome-pill";
@@ -717,10 +719,19 @@ parceiro_som
       sp.textContent = empresa;
       wrap.appendChild(sp);
       if (typeof filtroCategoriaCliente === "function") {
-        const cat = filtroCategoriaCliente(empresa);
+        const cat = filtroCategoriaCliente(empresa, tipoMaps || "");
         const pill = document.createElement("span");
         pill.className = "maps-pill-cat " + cat;
-        pill.textContent = cat === "estetica" ? "Estética" : cat === "comercio" ? "Comércio" : "Outros";
+        pill.textContent =
+          typeof labelCategoriaCliente === "function"
+            ? labelCategoriaCliente(cat)
+            : cat === "estetica"
+              ? "Estética"
+              : cat === "arquitetura"
+                ? "Arquitetura"
+                : cat === "comercio"
+                  ? "Comércio"
+                  : "Outros";
         wrap.appendChild(pill);
       }
       td.appendChild(wrap);
@@ -738,13 +749,15 @@ parceiro_som
       const cnt =
         typeof contarClientesPorCategoria === "function"
           ? contarClientesPorCategoria(lastMapsRows)
-          : { estetica: 0, comercio: 0, outros: 0 };
+          : { estetica: 0, arquitetura: 0, comercio: 0, outros: 0 };
       mapsSummary.textContent =
         (mapsCatFiltro !== "todos" ? "Visíveis: " + view.length + " de " + lastMapsRows.length + " · " : "") +
         "Blocos: " +
         lastMapsRows.length +
         " (estética " +
         cnt.estetica +
+        ", arquitetura " +
+        cnt.arquitetura +
         ", comércio " +
         cnt.comercio +
         ", outros " +
@@ -933,11 +946,17 @@ parceiro_som
     }
 
     function buildEmpresaTelefoneTsv(rows) {
+      const hasTipo = rows.some((r) => (r.tipoMaps || "").trim());
+      const head = hasTipo ? "empresa\ttelefone\ttipo\n" : "empresa\ttelefone\n";
       const body = rows.map((r) => {
         const tel = r.phones.length ? r.phones.join("; ") : "—";
+        if (hasTipo) {
+          const t = (r.tipoMaps || "").trim() || "—";
+          return r.empresa + "\t" + tel + "\t" + t;
+        }
         return r.empresa + "\t" + tel;
       });
-      return "empresa\ttelefone\n" + body.join("\n");
+      return head + body.join("\n");
     }
 
     function phoneDigits(phone) {
@@ -979,8 +998,11 @@ parceiro_som
         const phones = extractPhones(raw);
         const mobile = phones.find(isBrMobile) || "";
         const empresa = empresaForMapBlock(raw, phones);
+        const tipoMaps =
+          typeof extractTipoGoogleMaps === "function" ? extractTipoGoogleMaps(raw) : "";
         return {
           empresa,
+          tipoMaps,
           hasWebsite,
           phones,
           mobile,
@@ -1013,7 +1035,7 @@ parceiro_som
       rows.forEach((r) => {
         const tr = document.createElement("tr");
         const tdNome = document.createElement("td");
-        appendNomeComPill(tdNome, r.empresa);
+        appendNomeComPill(tdNome, r.empresa, r.tipoMaps);
         const tdTel = document.createElement("td");
         tdTel.textContent = r.phones.length ? r.phones.join("  ·  ") : "—";
         tr.appendChild(tdNome);
@@ -1045,7 +1067,7 @@ parceiro_som
         const msg = fillWaTemplate(tpl, r.empresa, r.mobile || (r.phones[0] || ""));
 
         const td1 = document.createElement("td");
-        appendNomeComPill(td1, r.empresa);
+        appendNomeComPill(td1, r.empresa, r.tipoMaps);
         const td2 = document.createElement("td");
         td2.innerHTML = siteCell;
         const td3 = document.createElement("td");

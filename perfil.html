@@ -115,6 +115,7 @@
       white-space: nowrap;
     }
     .pill-cat.estetica { background: var(--ok); }
+    .pill-cat.arquitetura { background: #90caf9; }
     .pill-cat.comercio { background: var(--pend); }
     .pill-cat.outros { background: #e8e8e8; }
     th.abord-col, td.abord-col {
@@ -192,6 +193,7 @@
       <span class="filter-cat-label">Categoria</span>
       <label><input type="radio" name="perfilCat" value="todos" checked /> Todos</label>
       <label><input type="radio" name="perfilCat" value="estetica" /> Estética automotiva</label>
+      <label><input type="radio" name="perfilCat" value="arquitetura" /> Arquitetura</label>
       <label><input type="radio" name="perfilCat" value="comercio" /> Comércio</label>
       <label><input type="radio" name="perfilCat" value="outros" /> Outros</label>
     </div>
@@ -246,7 +248,7 @@
     function loadPerfilCatFiltro() {
       try {
         const v = localStorage.getItem(KEY_FILTRO_CAT);
-        if (v === "estetica" || v === "comercio" || v === "outros" || v === "todos") {
+        if (v === "estetica" || v === "arquitetura" || v === "comercio" || v === "outros" || v === "todos") {
           document.querySelectorAll('input[name="perfilCat"]').forEach((inp) => {
             inp.checked = inp.value === v;
           });
@@ -273,12 +275,12 @@
     }
 
     /** Igual a clientes.html: prefer texto guardado localmente; senão gera por nome. */
-    function textoAbordagemParaPerfil(empresa) {
+    function textoAbordagemParaPerfil(empresa, tipoMaps) {
       const key = (empresa || "").trim().toLowerCase();
       const hit = getListaAbordagemLocal().find((x) => (x.empresa || "").trim().toLowerCase() === key);
       if (hit && hit.abordagem) return hit.abordagem;
       const gen = typeof window !== "undefined" && typeof window.gerarFraseAbordagem === "function" ? window.gerarFraseAbordagem : null;
-      if (gen) return gen(empresa);
+      if (gen) return gen(empresa, undefined, tipoMaps || "");
       return "(Carrega js/abordagem-frases.js ou guarda a lista em clientes.html.)";
     }
 
@@ -368,12 +370,12 @@
       let list = sortRows(rowsCache);
       if (sóPend) list = list.filter((r) => !r.contatado_em);
       if (catF !== "todos" && filtroCat) {
-        list = list.filter((r) => filtroCat(r.empresa) === catF);
+        list = list.filter((r) => filtroCat(r.empresa, r.tipo_maps || r.tipoMaps || "") === catF);
       }
       if (q) {
         list = list.filter((r) => {
           const t = (r.telefone || "").toLowerCase();
-          const ab = textoAbordagemParaPerfil(r.empresa).toLowerCase();
+          const ab = textoAbordagemParaPerfil(r.empresa, r.tipo_maps || r.tipoMaps || "").toLowerCase();
           return (r.empresa || "").toLowerCase().includes(q) || t.includes(q) || ab.includes(q);
         });
       }
@@ -422,14 +424,23 @@
         spNome.textContent = r.empresa;
         nomeWrap.appendChild(spNome);
         if (filtroCat) {
-          const c = filtroCat(r.empresa);
+          const c = filtroCat(r.empresa, r.tipo_maps || r.tipoMaps || "");
           const pc = document.createElement("span");
           pc.className = "pill-cat " + c;
-          pc.textContent = c === "estetica" ? "Estética" : c === "comercio" ? "Comércio" : "Outros";
+          pc.textContent =
+            typeof labelCategoriaCliente === "function"
+              ? labelCategoriaCliente(c)
+              : c === "estetica"
+                ? "Estética"
+                : c === "arquitetura"
+                  ? "Arquitetura"
+                  : c === "comercio"
+                    ? "Comércio"
+                    : "Outros";
           nomeWrap.appendChild(pc);
         }
         td1.appendChild(nomeWrap);
-        const fullAb = textoAbordagemParaPerfil(r.empresa);
+        const fullAb = textoAbordagemParaPerfil(r.empresa, r.tipo_maps || r.tipoMaps || "");
         const tdAb = document.createElement("td");
         tdAb.className = "abord-col";
         const abWrap = document.createElement("div");
